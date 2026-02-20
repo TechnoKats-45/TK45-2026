@@ -14,18 +14,19 @@ import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.FeedbackSensorSourceValue;
 import com.ctre.phoenix6.signals.InvertedValue;
 
-import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
 
 public class Climber extends SubsystemBase
 {
     private static final int CONFIG_RETRIES = 5;
-    private static final double STATOR_CURRENT_LIMIT_AMPS = 80.0;
-    private static final double SUPPLY_CURRENT_LIMIT_AMPS = 60.0;
-    private static final double MM_CRUISE_RPS = 8.0;
-    private static final double MM_ACCEL_RPS2 = 12.0;
-    private static final double SENSOR_TO_MECHANISM_RATIO = 12; // TODO: Check this - Sport Gearbox = 12:1
+    
+    private static final double STATOR_CURRENT_LIMIT_AMPS = 10.0;   // TODO - Adjust as necessary to prevent damage to the motor and mechanism - set low rn for testing purposes
+    private static final double SUPPLY_CURRENT_LIMIT_AMPS = 10.0;   // TODO - Adjust as necessary to prevent damage to the motor and mechanism - set low rn for testing purposes
+    private static final double MM_CRUISE_RPS = 5.0;
+    private static final double MM_ACCEL_RPS2 = 5.0;
+    private static final double SENSOR_TO_MECHANISM_RATIO = 78.33; // TOOD - Check this : Motor Gearbox = 20:1, 24T Gear -> 48T Gear = 2:1, 24T Pulley -> 47T Pulley = 47/24:1, Total Ratio = 20 * 2 * 47/24 = 78.33:1
     private static final double SLOT0_KS = 0.0;
     private static final double SLOT0_KV = 0.0;
     private static final double SLOT0_KP = 10.0;
@@ -34,59 +35,50 @@ public class Climber extends SubsystemBase
     private static final double PEAK_FORWARD_VOLTS = 16.0;
     private static final double PEAK_REVERSE_VOLTS = -16.0;
 
-    private final TalonFX climberMotor;
-    private final MotionMagicVoltage motionMagicVoltage = new MotionMagicVoltage(0);
-    private double currentHeightSetpointInches = 0.0;
+    private double currentHeightSetPointInches = 0.0; // Store the current angle preset for alignment checks
 
-    public Climber() 
+    private final TalonFX climber_motor;
+    private final MotionMagicVoltage motionMagicVoltage = new MotionMagicVoltage(0);
+
+    public Climber()
     {
-        climberMotor = new TalonFX(Constants.CAN_ID.CLIMBER);
+        climber_motor = new TalonFX(Constants.CAN_ID.CLIMBER);
         configureClimberMotor();
     }
 
-    public void zeroEncoder() {
-        climberMotor.setPosition(0.0);
-        currentHeightSetpointInches = 0.0;
-    }
-
-    public void setHeightInches(double heightInches) 
+    public void zeroEncoder() 
     {
-        double clampedHeight = MathUtil.clamp(
-                heightInches,
-                Constants.Climber.MIN_HEIGHT_INCHES,
-                Constants.Climber.MAX_HEIGHT_INCHES);
-        currentHeightSetpointInches = clampedHeight;
-        setPositionRotations(heightInchesToRotations(clampedHeight));
+        climber_motor.setPosition(0.0);
     }
 
-    public void stop() 
+    public void setHeightInches(double Height) 
     {
-        climberMotor.stopMotor();
+        climber_motor.setControl(motionMagicVoltage.withPosition(Height));
+        currentHeightSetPointInches = Height; // Update the current angle preset for alignment checks
+        SmartDashboard.putNumber("Climber Set Point", Height);
+    }
+    public void stop() {
+        climber_motor.stopMotor();
     }
 
-    public boolean isAtHeight() 
+    public double getHeightInches()
     {
-        return Math.abs(getHeightInches() - currentHeightSetpointInches) <= Constants.Climber.HEIGHT_TOLERANCE_INCHES;
+        return climber_motor.getPosition().getValueAsDouble();
     }
 
-    public double getHeightInches() 
+    public double getHeightInchesSetpoint()
     {
-        return rotationsToHeightInches(climberMotor.getPosition().getValueAsDouble());
+        return currentHeightSetPointInches;
     }
 
-    private void setPositionRotations(double rotations) {
-        climberMotor.setControl(motionMagicVoltage.withPosition(rotations));
+    public boolean isAligned()
+    {
+        return Math.abs(getHeightInches() - currentHeightSetPointInches) <= Constants.Climber.HEIGHT_TOLERANCE_INCHES;
     }
-
-    private static double heightInchesToRotations(double heightInches) {
-        return heightInches * Constants.Climber.ROTATIONS_PER_INCH;
-    }
-
-    private static double rotationsToHeightInches(double rotations) {
-        return rotations / Constants.Climber.ROTATIONS_PER_INCH;
-    }
-
-    private void configureClimberMotor() {
+    
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    private void configureClimberMotor() 
+    {
         TalonFXConfiguration climberConfigs = new TalonFXConfiguration()
                 .withCurrentLimits(new CurrentLimitsConfigs()
                         .withStatorCurrentLimit(STATOR_CURRENT_LIMIT_AMPS)
@@ -111,7 +103,7 @@ public class Climber extends SubsystemBase
 
         StatusCode status = StatusCode.StatusCodeNotInitialized;
         for (int i = 0; i < CONFIG_RETRIES; ++i) {
-            status = climberMotor.getConfigurator().apply(climberConfigs);
+            status = climber_motor.getConfigurator().apply(climberConfigs);
             if (status.isOK()) {
                 break;
             }

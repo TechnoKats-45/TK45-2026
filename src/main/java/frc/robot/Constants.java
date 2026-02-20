@@ -115,9 +115,8 @@ public class Constants
         public static final double CLIMB_SPEED = 0.5; // TODO - TUNE
         public static final double HEIGHT_TOLERANCE_INCHES = 0.5; // TODO - TUNE
         public static final double ROTATIONS_PER_INCH = 1.0; // TODO - set mechanism conversion
-        public static final double MIN_HEIGHT_INCHES = 0.0; // TODO - tune
-        public static final double CLIMB_HEIGHT_INCHES = 30.0; // TODO - tune
-        public static final double MAX_HEIGHT_INCHES = 40.0; // TODO - tune
+        public static final double MIN_HEIGHT_INCHES = 21.0; // TODO - tune
+        public static final double MAX_HEIGHT_INCHES = 29.0; // TODO - tune
     }
 
     public class Spindexer
