@@ -57,7 +57,8 @@ public class Climber extends SubsystemBase
         currentHeightSetPointInches = Height; // Update the current angle preset for alignment checks
         SmartDashboard.putNumber("Climber Set Point", Height);
     }
-    public void stop() {
+    public void stop() 
+    {
         climber_motor.stopMotor();
     }
 
