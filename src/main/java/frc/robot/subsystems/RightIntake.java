@@ -20,7 +20,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
 
-public class LeftIntake extends SubsystemBase 
+public class RightIntake extends SubsystemBase 
 {   
     private static final int CONFIG_RETRIES = 5;
 
@@ -61,11 +61,11 @@ public class LeftIntake extends SubsystemBase
     private double currentSpeedSetpointRps = 0.0;
 
 
-  public LeftIntake()
+  public RightIntake()
   {
-    intake_pivot_motor = new TalonFX(Constants.CAN_ID.INTAKE_LEFT_ROTATE);//need to set CAN ID might have to change how it is set because of different motors
+    intake_pivot_motor = new TalonFX(Constants.CAN_ID.INTAKE_RIGHT_ROTATE);//need to set CAN ID might have to change how it is set because of different motors
         configurePivotMotor(); //TODO Need pass throughs
-    intake_roller_motor = new TalonFX(Constants.CAN_ID.INTAKE_LEFT);//need to set CAN ID might have to change how it is set because of different motors
+    intake_roller_motor = new TalonFX(Constants.CAN_ID.INTAKE_RIGHT);//need to set CAN ID might have to change how it is set because of different motors
         configureSpinMotor(); //TODO Need pass throughs
   }
  
@@ -80,7 +80,7 @@ public class LeftIntake extends SubsystemBase
   {
      intake_pivot_motor.setControl(motionMagicVoltage.withPosition(angle));
         currentAngleSetPoint = angle; // Update the current angle preset for alignment checks
-        SmartDashboard.putNumber("LEFT Intake Set Point", angle);
+        SmartDashboard.putNumber("RIGHT Intake Set Point", angle);
   }
 
   public double getAngle()
@@ -96,7 +96,7 @@ public class LeftIntake extends SubsystemBase
   public void setSpeed(double speedRps) {
         currentSpeedSetpointRps = speedRps;
         intake_roller_motor.setControl(velocityRequest.withVelocity(currentSpeedSetpointRps));
-        SmartDashboard.putNumber("LEFT Intake LEFT Speed Setpoint RPS", currentSpeedSetpointRps);
+        SmartDashboard.putNumber("RIGHT Intake Speed Setpoint RPS", currentSpeedSetpointRps);
     }
 
     
@@ -153,7 +153,7 @@ public class LeftIntake extends SubsystemBase
             }
         }
         if (!status.isOK()) {
-            System.out.println("Could not apply LEFT pivot intake configs, error code: " + status);
+            System.out.println("Could not apply RIGHT pivot intake configs, error code: " + status);
         }
     }
     private void configureSpinMotor()
@@ -188,7 +188,7 @@ public class LeftIntake extends SubsystemBase
             }
         }
         if (!status.isOK()) {
-            System.out.println("Could not apply LEFT spin intake configs, error code: " + status);
+            System.out.println("Could not apply RIGHT spin intake configs, error code: " + status);
         }
     }
 }
