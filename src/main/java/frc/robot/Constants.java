@@ -108,6 +108,7 @@ public class Constants
     {
         public static final double INTAKE_SPEED = 0.5; // TODO - TUNE
         public static final double INTAKE_ROTATE_SPEED = 0.5; // TODO - TUNE
+        public static final double AngleToleranceDegrees = 0; // TODO - TUNE
     }
 
     public class Climber
