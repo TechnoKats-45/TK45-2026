@@ -31,12 +31,16 @@ public class RightIntake extends SubsystemBase
     private static final double SENSOR_TO_MECHANISM_RATIO = 0; // TOOD - Set this for the intake sprot box
     //PID - TODO tune
     
+
+    // PID constants for pivot motor
     private static final double SLOT0_KS = 0.0;
     private static final double SLOT0_KV = 0.0;
     private static final double SLOT0_KP = 10.0;
     private static final double SLOT0_KI = 0.0;
     private static final double SLOT0_KD = 1.0;
 
+
+    // PID constants for spin motor
     private static final double SLOT1_KS = 0.0;
     private static final double SLOT1_KV = 0.0;
     private static final double SLOT1_KP = 10.0;
@@ -145,7 +149,7 @@ public class RightIntake extends SubsystemBase
         IntakePivotConfigs.Slot0.kP = SLOT0_KP;
         IntakePivotConfigs.Slot0.kI = SLOT0_KI;
         IntakePivotConfigs.Slot0.kD = SLOT0_KD;
-        IntakePivotConfigs.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;// might need to tweek this
+        IntakePivotConfigs.MotorOutput.Inverted = InvertedValue.Clockwise_Positive; // might need to tweek this
         IntakePivotConfigs.Voltage
                 .withPeakForwardVoltage(Volts.of(PEAK_FORWARD_VOLTS))
                 .withPeakReverseVoltage(Volts.of(PEAK_REVERSE_VOLTS));
@@ -180,7 +184,7 @@ public class RightIntake extends SubsystemBase
         IntakeSpinConfigs.Slot1.kP = SLOT1_KP;
         IntakeSpinConfigs.Slot1.kI = SLOT1_KI;
         IntakeSpinConfigs.Slot1.kD = SLOT1_KD;
-        IntakeSpinConfigs.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;// might need to tweek this
+        IntakeSpinConfigs.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;  // might need to tweek this
         IntakeSpinConfigs.Voltage
                 .withPeakForwardVoltage(Volts.of(PEAK_FORWARD_VOLTS))
                 .withPeakReverseVoltage(Volts.of(PEAK_REVERSE_VOLTS));

@@ -34,7 +34,7 @@ public class RobotContainer
 
     private final CommandXboxController driver = new CommandXboxController(0); // Drive controller
     private final CommandXboxController operator = new CommandXboxController(1);    // Operator controller
-    private final CommandXboxController test = new CommandXboxController(2); 
+    private final CommandXboxController test = new CommandXboxController(2);    // Test controller
 
     public final Drivetrain drivetrain = TunerConstants.createDrivetrain();
     public final Climber s_climber = new Climber();
