@@ -17,7 +17,8 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
 
-public class Spindex extends SubsystemBase {
+public class Spindex extends SubsystemBase 
+{
     private static final int CONFIG_RETRIES = 5;
 
     private static final double STATOR_CURRENT_LIMIT_AMPS = 40.0;
@@ -60,10 +61,6 @@ public class Spindex extends SubsystemBase {
 
     public double getSpeed() {
         return spindexMotor.getVelocity().getValueAsDouble();
-    }
-
-    public boolean isAtSpeed() {
-        return isAtSpeed(SPEED_TOLERANCE_RPS);
     }
 
     public boolean isAtSpeed(double toleranceRps) {

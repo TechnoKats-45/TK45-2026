@@ -88,10 +88,10 @@ public class RobotContainer
         driver.start().and(driver.y()).whileTrue(drivetrain.sysIdQuasistatic(Direction.kForward));
         driver.start().and(driver.x()).whileTrue(drivetrain.sysIdQuasistatic(Direction.kReverse));
 
-        driver.leftBumper().whileTrue(); // Intake Left
-        driver.rightBumper().whileTrue(); // Intake Right
+        //driver.leftBumper().whileTrue(); // Intake Left
+        //driver.rightBumper().whileTrue(); // Intake Right
 
-        driver.rightTrigger().whileTrue(); // Manual Shoot
+        //driver.rightTrigger().whileTrue(); // Manual Shoot
 
         drivetrain.registerTelemetry(logger::telemeterize);
     }
