@@ -18,8 +18,7 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
 import frc.robot.generated.TunerConstants;
-import frc.robot.subsystems.Drivetrain;
-
+import frc.robot.subsystems.*;
 public class RobotContainer 
 {
     private double MaxSpeed = 1.0 * TunerConstants.kSpeedAt12Volts.in(MetersPerSecond); // kSpeedAt12Volts desired top speed, change multiplier to change max speed
@@ -35,8 +34,10 @@ public class RobotContainer
 
     private final CommandXboxController driver = new CommandXboxController(0); // Drive controller
     private final CommandXboxController operator = new CommandXboxController(1);    // Operator controller
+    private final CommandXboxController test = new CommandXboxController(2); 
 
     public final Drivetrain drivetrain = TunerConstants.createDrivetrain();
+    public final Climber s_climber = new Climber();
     
     private final SendableChooser<Command> autoChooser; 
 
@@ -94,6 +95,10 @@ public class RobotContainer
         //driver.rightTrigger().whileTrue(); // Manual Shoot
 
         drivetrain.registerTelemetry(logger::telemeterize);
+
+        //TEST:
+        test.a().onTrue(s_climber.runOnce(() -> s_climber.setHeightInches(Constants.Climber.MIN_HEIGHT_INCHES))); // a goes to minimum climber height
+        test.y().onTrue(s_climber.runOnce(() -> s_climber.setHeightInches(Constants.Climber.MAX_HEIGHT_INCHES))); // y goes to max climber height
     }
 
     public Command getAutonomousCommand() 
