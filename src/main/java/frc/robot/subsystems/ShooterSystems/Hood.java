@@ -70,7 +70,12 @@ public class Hood extends SubsystemBase
 
     public boolean isAligned()
     {
-        return Math.abs(getAngle() - currentAngleSetPoint) <= Constants.Hood.AngleToleranceDegrees;
+        return isAligned(Constants.Hood.AngleToleranceDegrees);
+    }
+
+    public boolean isAligned(double toleranceDegrees)
+    {
+        return Math.abs(getAngle() - currentAngleSetPoint) <= toleranceDegrees;
     }
     
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

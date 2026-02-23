@@ -69,7 +69,12 @@ public class Turret extends SubsystemBase
 
     public boolean isAligned()
     {
-        return Math.abs(getAngle() - currentAngleSetPoint) <= Constants.Turret.AngleToleranceDegrees;
+        return isAligned(Constants.Turret.AngleToleranceDegrees);
+    }
+
+    public boolean isAligned(double toleranceDegrees)
+    {
+        return Math.abs(getAngle() - currentAngleSetPoint) <= toleranceDegrees;
     }
     
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
