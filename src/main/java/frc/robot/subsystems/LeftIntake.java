@@ -7,7 +7,6 @@ import com.ctre.phoenix6.StatusCode;
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
 import com.ctre.phoenix6.configs.FeedbackConfigs;
 import com.ctre.phoenix6.configs.MotionMagicConfigs;
-import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.MotionMagicVoltage;
 import com.ctre.phoenix6.controls.VelocityTorqueCurrentFOC;
@@ -23,42 +22,51 @@ import frc.robot.Constants;
 public class LeftIntake extends SubsystemBase 
 {   
     private static final int CONFIG_RETRIES = 5;
-
-    private static final double STATOR_CURRENT_LIMIT_AMPS = 10.0;   // TODO - Adjust as necessary to prevent damage to the motor and mechanism - set low rn for testing purposes
-    private static final double SUPPLY_CURRENT_LIMIT_AMPS = 10.0;   // TODO - Adjust as necessary to prevent damage to the motor and mechanism - set low rn for testing purposes
-    private static final double MM_CRUISE_RPS = 5.0;
-    private static final double MM_ACCEL_RPS2 = 5.0;
-    private static final double SENSOR_TO_MECHANISM_RATIO = 0; // TOOD - Set this for the intake sprot box
-    //PID - TODO tune
-    // PIVOT PID
+    // Pivot Vars
+    // Change to add _PIVOT
+    private static final double STATOR_CURRENT_LIMIT_AMPS_PIVOT = 10.0;   // TODO - Adjust as necessary to prevent damage to the motor and mechanism - set low rn for testing purposes
+    private static final double SUPPLY_CURRENT_LIMIT_AMPS_PIVOT = 10.0;   // TODO - Adjust as necessary to prevent damage to the motor and mechanism - set low rn for testing purposes
+    private static final double MM_CRUISE_RPS_PIVOT = 0.5; // TODO tune
+    private static final double MM_ACCEL_RPS2_PIVOT = 0.5; // TODO TUNE
+    private static final double SENSOR_TO_MECHANISM_RATIO_PIVOT = 70.0;
+    private static final double PEAK_FORWARD_VOLTS_PIVOT= 16.0;
+    private static final double PEAK_REVERSE_VOLTS_PIVOT= -16.0;
+    private double currentAngleSetPoint = 0.0;   
+     //PID - TODO tune
     private static final double SLOT0_KS = 0.0;
     private static final double SLOT0_KV = 0.0;
     private static final double SLOT0_KP = 10.0;
     private static final double SLOT0_KI = 0.0;
     private static final double SLOT0_KD = 1.0;
-    // Rollor PID
+    
+    //Roller Vars
+    private static final double STATOR_CURRENT_LIMIT_AMPS_ROLLER = 10.0;   // TODO - Adjust as necessary to prevent damage to the motor and mechanism - set low rn for testing purposes
+    private static final double SUPPLY_CURRENT_LIMIT_AMPS_ROLLER = 10.0;   // TODO - Adjust as necessary to prevent damage to the motor and mechanism - set low rn for testing purposes
+    private static final double MM_CRUISE_RPS_ROLLER = 5.0; // TODO tune
+    private static final double MM_ACCEL_RPS2_ROLLER = 5.0; // TODO Tune
+    private static final double SENSOR_TO_MECHANISM_RATIO_ROLLER = 1.0; // TODO tune
+    private static final double PEAK_FORWARD_VOLTS_ROLLER = 16.0;
+    private static final double PEAK_REVERSE_VOLTS_ROLLER = -16.0;
+    private static final double MAX_INTAKE_SPEED_RPS = 40.0; // TODO - tune
+
+    private double currentSpeedSetpointRps = 0.0;  
+    //TODO TUNE PID
     private static final double SLOT1_KS = 0.0;
     private static final double SLOT1_KV = 0.0;
     private static final double SLOT1_KP = 10.0;
     private static final double SLOT1_KI = 0.0;
     private static final double SLOT1_KD = 1.0;
 
+    
 
-    private static final double PEAK_FORWARD_VOLTS = 16.0;
-    private static final double PEAK_REVERSE_VOLTS = -16.0;
-
-    private double currentAngleSetPoint = 0.0;
-
+    // declare pivot motor
     private final TalonFX intake_pivot_motor;
     private final MotionMagicVoltage motionMagicVoltage = new MotionMagicVoltage(0);
 
-    private static final double SPEED_TOLERANCE_RPS = 0.5;
-    private static final double MAX_INTAKE_SPEED_RPS = 40.0; // TODO - tune
-    private static final InvertedValue MOTOR_INVERTED = InvertedValue.CounterClockwise_Positive;
-
+    // declare rollor motor
     private final TalonFX intake_roller_motor;
     private final VelocityTorqueCurrentFOC velocityRequest = new VelocityTorqueCurrentFOC(0);
-    private double currentSpeedSetpointRps = 0.0;
+    
 
 
     public LeftIntake()
@@ -68,7 +76,7 @@ public class LeftIntake extends SubsystemBase
         intake_roller_motor = new TalonFX(Constants.CAN_ID.INTAKE_LEFT);//need to set CAN ID might have to change how it is set because of different motors
         configureSpinMotor(); //TODO Need pass throughs
     }
-
+    
     public void zeroEncoder() 
     {
         intake_pivot_motor.setPosition(0.0);
@@ -93,57 +101,62 @@ public class LeftIntake extends SubsystemBase
         return Math.abs(getAngle() - currentAngleSetPoint) <= Constants.Intake.AngleToleranceDegrees; //TODO TUNE
     }
     // Code for rollers
-    public void setSpeed(double speedRps) {
+    public void setSpeed(double speedRps) 
+    {
         currentSpeedSetpointRps = speedRps;
         intake_roller_motor.setControl(velocityRequest.withVelocity(currentSpeedSetpointRps));
-        SmartDashboard.putNumber("LEFT Intake LEFT Speed Setpoint RPS", currentSpeedSetpointRps);
+        SmartDashboard.putNumber("LEFT Intake Speed Setpoint RPS", currentSpeedSetpointRps);
     }
 
     
-    public void runFeed(double percentOutput) {
+    public void runFeed(double percentOutput) 
+    {
         double clamped = MathUtil.clamp(percentOutput, -1.0, 1.0);
         setSpeed(clamped * MAX_INTAKE_SPEED_RPS);
     }
 
-    public double getSpeed() {
+    public double getSpeed() 
+    {
         return intake_roller_motor.getVelocity().getValueAsDouble();
     }
 
 
-    public boolean isAtSpeed(double toleranceRps) {
+    public boolean isAtSpeed(double toleranceRps) 
+    {
         return Math.abs(getSpeed() - currentSpeedSetpointRps) <= toleranceRps;
     }
 
-    public void stop() {
+    public void stop() 
+    {
         currentSpeedSetpointRps = 0.0;
         intake_roller_motor.stopMotor();
     }
 
 
-    // TODO Add second congfig. for spin motors
+    //TODO Change vars to to PIVOT VARS
     private void configurePivotMotor()
     {
         TalonFXConfiguration IntakePivotConfigs = new TalonFXConfiguration()
                 .withCurrentLimits(new CurrentLimitsConfigs()
-                        .withStatorCurrentLimit(STATOR_CURRENT_LIMIT_AMPS)
-                        .withSupplyCurrentLimit(SUPPLY_CURRENT_LIMIT_AMPS)
+                        .withStatorCurrentLimit(STATOR_CURRENT_LIMIT_AMPS_PIVOT)
+                        .withSupplyCurrentLimit(SUPPLY_CURRENT_LIMIT_AMPS_PIVOT)
                         .withStatorCurrentLimitEnable(true))
                 .withFeedback(new FeedbackConfigs()
                         .withFeedbackSensorSource(FeedbackSensorSourceValue.RotorSensor)
-                        .withSensorToMechanismRatio(SENSOR_TO_MECHANISM_RATIO))
+                        .withSensorToMechanismRatio(SENSOR_TO_MECHANISM_RATIO_PIVOT))
                 .withMotionMagic(new MotionMagicConfigs()
-                        .withMotionMagicCruiseVelocity(RotationsPerSecond.of(MM_CRUISE_RPS))
-                        .withMotionMagicAcceleration(RotationsPerSecondPerSecond.of(MM_ACCEL_RPS2)));
+                        .withMotionMagicCruiseVelocity(RotationsPerSecond.of(MM_CRUISE_RPS_PIVOT))
+                        .withMotionMagicAcceleration(RotationsPerSecondPerSecond.of(MM_ACCEL_RPS2_PIVOT)));
 
         IntakePivotConfigs.Slot0.kS = SLOT0_KS;
         IntakePivotConfigs.Slot0.kV = SLOT0_KV;
         IntakePivotConfigs.Slot0.kP = SLOT0_KP;
         IntakePivotConfigs.Slot0.kI = SLOT0_KI;
         IntakePivotConfigs.Slot0.kD = SLOT0_KD;
-        IntakePivotConfigs.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;// might need to tweek this
+        IntakePivotConfigs.MotorOutput.Inverted = InvertedValue.Clockwise_Positive; // might need to tweek this
         IntakePivotConfigs.Voltage
-                .withPeakForwardVoltage(Volts.of(PEAK_FORWARD_VOLTS))
-                .withPeakReverseVoltage(Volts.of(PEAK_REVERSE_VOLTS));
+                .withPeakForwardVoltage(Volts.of(PEAK_FORWARD_VOLTS_PIVOT))
+                .withPeakReverseVoltage(Volts.of(PEAK_REVERSE_VOLTS_PIVOT));
 
         StatusCode status = StatusCode.StatusCodeNotInitialized;
         for (int i = 0; i < CONFIG_RETRIES; ++i) {
@@ -156,19 +169,20 @@ public class LeftIntake extends SubsystemBase
             System.out.println("Could not apply LEFT pivot intake configs, error code: " + status);
         }
     }
+    //TODO Change vars to to INTAKE VARS
     private void configureSpinMotor()
     {
         TalonFXConfiguration IntakeSpinConfigs = new TalonFXConfiguration()
                 .withCurrentLimits(new CurrentLimitsConfigs()
-                        .withStatorCurrentLimit(STATOR_CURRENT_LIMIT_AMPS)
-                        .withSupplyCurrentLimit(SUPPLY_CURRENT_LIMIT_AMPS)
+                        .withStatorCurrentLimit(STATOR_CURRENT_LIMIT_AMPS_ROLLER)
+                        .withSupplyCurrentLimit(SUPPLY_CURRENT_LIMIT_AMPS_ROLLER)
                         .withStatorCurrentLimitEnable(true))
                 .withFeedback(new FeedbackConfigs()
                         .withFeedbackSensorSource(FeedbackSensorSourceValue.RotorSensor)
-                        .withSensorToMechanismRatio(SENSOR_TO_MECHANISM_RATIO))
+                        .withSensorToMechanismRatio(SENSOR_TO_MECHANISM_RATIO_ROLLER))
                 .withMotionMagic(new MotionMagicConfigs()
-                        .withMotionMagicCruiseVelocity(RotationsPerSecond.of(MM_CRUISE_RPS))
-                        .withMotionMagicAcceleration(RotationsPerSecondPerSecond.of(MM_ACCEL_RPS2)));
+                        .withMotionMagicCruiseVelocity(RotationsPerSecond.of(MM_CRUISE_RPS_ROLLER))
+                        .withMotionMagicAcceleration(RotationsPerSecondPerSecond.of(MM_ACCEL_RPS2_ROLLER)));
 
         IntakeSpinConfigs.Slot0.kS = SLOT1_KS;
         IntakeSpinConfigs.Slot0.kV = SLOT1_KV;
@@ -177,8 +191,8 @@ public class LeftIntake extends SubsystemBase
         IntakeSpinConfigs.Slot0.kD = SLOT1_KD;
         IntakeSpinConfigs.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;// might need to tweek this
         IntakeSpinConfigs.Voltage
-                .withPeakForwardVoltage(Volts.of(PEAK_FORWARD_VOLTS))
-                .withPeakReverseVoltage(Volts.of(PEAK_REVERSE_VOLTS));
+                .withPeakForwardVoltage(Volts.of(PEAK_FORWARD_VOLTS_ROLLER))
+                .withPeakReverseVoltage(Volts.of(PEAK_REVERSE_VOLTS_ROLLER));
 
         StatusCode status = StatusCode.StatusCodeNotInitialized;
         for (int i = 0; i < CONFIG_RETRIES; ++i) {
@@ -192,4 +206,3 @@ public class LeftIntake extends SubsystemBase
         }
     }
 }
-
