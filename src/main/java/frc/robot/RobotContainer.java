@@ -59,17 +59,17 @@ public class RobotContainer
             s_spindex,
             s_ballElevator,
             s_shotCalculator,
-            () -> true, // TODO: replace with operator button/toggle when available
-            () -> {
+            () -> operator.getLeftTriggerAxis() <= 0.5, // Inverted LT behavior: AutoShoot runs unless LT is held.
+            () -> 
+            {
                 // Sim helper: allow forcing score-enable without a physical LT input.
                 if (RobotBase.isSimulation()
                         && SmartDashboard.getBoolean("AutoShoot/ForceScoreEnable", false)) {
                     return true;
                 }
-                // Hold LT to allow hub scoring on scoring side.
-                return operator.getLeftTriggerAxis() > 0.5;
-            },
-            () -> true // TODO: replace/augment with explicit external scoring-window signal if desired
+                // Match inverted LT behavior: score-enable while LT is NOT held.
+                return operator.getLeftTriggerAxis() <= 0.5;
+            }
     );
     
     private final SendableChooser<Command> autoChooser; 

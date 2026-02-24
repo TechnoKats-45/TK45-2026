@@ -52,11 +52,14 @@ public class AutoShoot extends Command {
     private final ShotCalculator shotCalculator;
     private final BooleanSupplier autoEnabledSupplier;
     private final BooleanSupplier scoreEnableSupplier;
-    private final BooleanSupplier externalScoreWindowSupplier;
     private final Field2d zoneField = new Field2d();
-    private final StructArrayPublisher<Pose3d> trajectory3dPublisher = NetworkTableInstance.getDefault()
+    private final StructArrayPublisher<Pose3d> trajectory3dRawPublisher = NetworkTableInstance.getDefault()
             .getTable("AutoShoot")
-            .getStructArrayTopic("Trajectory3d", Pose3d.struct)
+            .getStructArrayTopic("Trajectory3dRaw", Pose3d.struct)
+            .publish();
+    private final StructArrayPublisher<Pose3d> trajectory3dAllowedPublisher = NetworkTableInstance.getDefault()
+            .getTable("AutoShoot")
+            .getStructArrayTopic("Trajectory3dAllowed", Pose3d.struct)
             .publish();
 
     public AutoShoot(
@@ -68,8 +71,7 @@ public class AutoShoot extends Command {
             BallElevator ballElevator,
             ShotCalculator shotCalculator,
             BooleanSupplier autoEnabledSupplier,
-            BooleanSupplier scoreEnableSupplier,
-            BooleanSupplier externalScoreWindowSupplier) {
+            BooleanSupplier scoreEnableSupplier) {
         this.drivetrain = drivetrain;
         this.shooter = shooter;
         this.hood = hood;
@@ -79,7 +81,6 @@ public class AutoShoot extends Command {
         this.shotCalculator = shotCalculator;
         this.autoEnabledSupplier = autoEnabledSupplier;
         this.scoreEnableSupplier = scoreEnableSupplier;
-        this.externalScoreWindowSupplier = externalScoreWindowSupplier;
 
         addRequirements(shooter, hood, turret, spindex, ballElevator, shotCalculator);
         putDashboardDefaults();
@@ -127,7 +128,8 @@ public class AutoShoot extends Command {
         if (intercept == null) {
             intercept = new InterceptSolution(target, 0.0, 0.0, 0.0, 0.0);
         }
-        publishShotTrajectory(shooterPose, effectiveTarget, intercept);
+        TrajectoryData trajectoryData = buildShotTrajectory(shooterPose, effectiveTarget, intercept);
+        publishRawTrajectory(trajectoryData);
 
         hood.setAngle(Math.toDegrees(intercept.launchPitchRad()));
         shooter.setTargetSpeedRps(shotCalculator.getTargetSpeedRps());
@@ -153,6 +155,7 @@ public class AutoShoot extends Command {
                 && shooter.isAtSpeed(speedToleranceRps)
                 && hood.isAligned(aimToleranceDeg)
                 && turret.isAligned(aimToleranceDeg);
+        publishAllowedTrajectory(trajectoryData, canScoreWindow);
 
         if (readyToFeed) {
             double feedPercent = SmartDashboard.getNumber(
@@ -288,10 +291,9 @@ public class AutoShoot extends Command {
     private record ZoneBoundaries(double blueScoreMaxX, double redScoreMinX) {
     }
 
-    private void publishShotTrajectory(Pose3d shooterPose, Pose3d effectiveTarget, InterceptSolution intercept) {
+    private TrajectoryData buildShotTrajectory(Pose3d shooterPose, Pose3d effectiveTarget, InterceptSolution intercept) {
         if (intercept.flightTime() <= 0.0 || intercept.launchSpeed() <= 0.0) {
-            clearShotTrajectory();
-            return;
+            return null;
         }
 
         double dx = effectiveTarget.getX() - shooterPose.getX();
@@ -307,7 +309,7 @@ public class AutoShoot extends Command {
         double dt = Math.max(0.01, SmartDashboard.getNumber(DASH_PREFIX + "TrajectoryStepS", 0.05));
         double flightTime = intercept.flightTime();
 
-        List<Pose2d> poses = new ArrayList<>();
+        List<Pose2d> poses2d = new ArrayList<>();
         List<Pose3d> poses3d = new ArrayList<>();
         double zPeak = shooterPose.getZ();
         for (double t = 0.0; t <= flightTime; t += dt) {
@@ -315,25 +317,53 @@ public class AutoShoot extends Command {
             double y = shooterPose.getY() + vy * t;
             double z = shooterPose.getZ() + speed * Math.sin(pitch) * t - 0.5 * 9.81 * t * t;
             zPeak = Math.max(zPeak, z);
-            poses.add(new Pose2d(x, y, Rotation2d.kZero));
+            poses2d.add(new Pose2d(x, y, Rotation2d.kZero));
             poses3d.add(new Pose3d(x, y, z, Rotation3d.kZero));
         }
 
-        Pose2d impactPose = poses.get(poses.size() - 1);
-        zoneField.getObject("ShotTrajectory").setPoses(poses);
-        zoneField.getObject("ShotImpact").setPose(impactPose);
-        trajectory3dPublisher.set(poses3d.toArray(new Pose3d[0]));
+        Pose2d impactPose = poses2d.get(poses2d.size() - 1);
 
         SmartDashboard.putNumber(DASH_PREFIX + "TrajectoryFlightTimeS", flightTime);
         SmartDashboard.putNumber(DASH_PREFIX + "TrajectoryPeakZ_m", zPeak);
         SmartDashboard.putNumber(DASH_PREFIX + "TrajectoryImpactX_m", impactPose.getX());
         SmartDashboard.putNumber(DASH_PREFIX + "TrajectoryImpactY_m", impactPose.getY());
+        return new TrajectoryData(poses2d, poses3d, impactPose);
+    }
+
+    private void publishRawTrajectory(TrajectoryData data) {
+        if (data == null) {
+            zoneField.getObject("ShotTrajectoryRaw").setPoses(List.of());
+            zoneField.getObject("ShotImpactRaw").setPoses(List.of());
+            trajectory3dRawPublisher.set(new Pose3d[0]);
+            return;
+        }
+        zoneField.getObject("ShotTrajectoryRaw").setPoses(data.poses2d);
+        zoneField.getObject("ShotImpactRaw").setPose(data.impactPose);
+        trajectory3dRawPublisher.set(data.poses3d.toArray(new Pose3d[0]));
+    }
+
+    private void publishAllowedTrajectory(TrajectoryData data, boolean allowed) {
+        if (!allowed || data == null) {
+            zoneField.getObject("ShotTrajectoryAllowed").setPoses(List.of());
+            zoneField.getObject("ShotImpactAllowed").setPoses(List.of());
+            trajectory3dAllowedPublisher.set(new Pose3d[0]);
+            return;
+        }
+        zoneField.getObject("ShotTrajectoryAllowed").setPoses(data.poses2d);
+        zoneField.getObject("ShotImpactAllowed").setPose(data.impactPose);
+        trajectory3dAllowedPublisher.set(data.poses3d.toArray(new Pose3d[0]));
     }
 
     private void clearShotTrajectory() {
-        zoneField.getObject("ShotTrajectory").setPoses(List.of());
-        zoneField.getObject("ShotImpact").setPoses(List.of());
-        trajectory3dPublisher.set(new Pose3d[0]);
+        zoneField.getObject("ShotTrajectoryRaw").setPoses(List.of());
+        zoneField.getObject("ShotImpactRaw").setPoses(List.of());
+        zoneField.getObject("ShotTrajectoryAllowed").setPoses(List.of());
+        zoneField.getObject("ShotImpactAllowed").setPoses(List.of());
+        trajectory3dRawPublisher.set(new Pose3d[0]);
+        trajectory3dAllowedPublisher.set(new Pose3d[0]);
+    }
+
+    private record TrajectoryData(List<Pose2d> poses2d, List<Pose3d> poses3d, Pose2d impactPose) {
     }
 
     private Pose2d[] denseRectOutlinePoses(double minX, double maxX, double minY, double maxY, double stepM) {
@@ -373,54 +403,62 @@ public class AutoShoot extends Command {
     }
 
     private boolean canScoreHubNow() {
-        // External kill-switch from RobotContainer (future operator/game logic hook).
-        if (!externalScoreWindowSupplier.getAsBoolean()) {
-            return false;
+        if (SmartDashboard.getBoolean(DASH_PREFIX + "ForceScoringPermission", false)) {
+            SmartDashboard.putBoolean(DASH_PREFIX + "ScoringPermissionOverride", true);
+            SmartDashboard.putBoolean(DASH_PREFIX + "GoalActiveByShift", true);
+            return true;
         }
+        SmartDashboard.putBoolean(DASH_PREFIX + "ScoringPermissionOverride", false);
 
-        if (!DriverStation.isFMSAttached()) {
+        boolean active = isMyGoalActiveByShift();
+        SmartDashboard.putBoolean(DASH_PREFIX + "GoalActiveByShift", active);
+        return active;
+    }
+
+    private boolean isMyGoalActiveByShift() {
+        Alliance alliance = getAllianceForAutoShoot();
+
+        // Hub always active in autonomous.
+        if (DriverStation.isAutonomousEnabled()) {
             return true;
         }
 
-        Alliance alliance = getAllianceForAutoShoot();
-
-        Optional<Alliance> allianceFromNt = parseAlliance(FMS_TABLE.getEntry("ActiveScoringAlliance").getString(""));
-        if (allianceFromNt.isPresent()) {
-            return allianceFromNt.get() == alliance;
+        // If not teleop enabled, we do not score.
+        if (!DriverStation.isTeleopEnabled()) {
+            return false;
         }
 
-        boolean redScoring = FMS_TABLE.getEntry("IsRedAllianceScoring").getBoolean(false);
-        boolean blueScoring = FMS_TABLE.getEntry("IsBlueAllianceScoring").getBoolean(false);
-        if (redScoring || blueScoring) {
-            return alliance == Alliance.Red ? redScoring : blueScoring;
+        double matchTime = DriverStation.getMatchTime();
+        String gameData = DriverStation.getGameSpecificMessage();
+        SmartDashboard.putString(DASH_PREFIX + "GameDataRaw", gameData);
+        SmartDashboard.putNumber(DASH_PREFIX + "MatchTimeS", matchTime);
+
+        boolean redInactiveFirst;
+        if ("R".equalsIgnoreCase(gameData)) {
+            redInactiveFirst = true;
+        } else if ("B".equalsIgnoreCase(gameData)) {
+            redInactiveFirst = false;
+        } else {
+            // No/invalid data yet: assume active to avoid deadlocking scoring.
+            return true;
         }
 
-        Optional<Alliance> allianceFromMessage = parseAlliance(DriverStation.getGameSpecificMessage());
-        if (allianceFromMessage.isPresent()) {
-            return allianceFromMessage.get() == alliance;
-        }
+        // Shift 1 is active for blue if red is inactive first, else active for red.
+        boolean shift1Active = (alliance == Alliance.Red) ? !redInactiveFirst : redInactiveFirst;
 
-        // If no explicit scoring-window signal exists, do not block scoring.
-        return true;
-    }
-
-    private Optional<Alliance> parseAlliance(String value) {
-        if (value == null) {
-            return Optional.empty();
+        if (matchTime > 130.0) {
+            return true; // Transition shift (active)
+        } else if (matchTime > 105.0) {
+            return shift1Active; // Shift 1
+        } else if (matchTime > 80.0) {
+            return !shift1Active; // Shift 2
+        } else if (matchTime > 55.0) {
+            return shift1Active; // Shift 3
+        } else if (matchTime > 30.0) {
+            return !shift1Active; // Shift 4
+        } else {
+            return true; // Endgame shift (active)
         }
-
-        String normalized = value.trim().toLowerCase(Locale.ROOT);
-        if (normalized.isEmpty()) {
-            return Optional.empty();
-        }
-        if (normalized.equals("r") || normalized.startsWith("red")) {
-            return Optional.of(Alliance.Red);
-        }
-        if (normalized.equals("b") || normalized.startsWith("blue")) {
-            return Optional.of(Alliance.Blue);
-        }
-
-        return Optional.empty();
     }
 
     private Alliance getAllianceForAutoShoot() {
@@ -472,6 +510,8 @@ public class AutoShoot extends Command {
         SmartDashboard.putNumber(DASH_PREFIX + "TrajectoryStepS", 0.05);
         SmartDashboard.putString(DASH_PREFIX + "AllianceSource", "Unknown");
         SmartDashboard.putBoolean(DASH_PREFIX + "DSAlliancePresent", false);
+        SmartDashboard.putBoolean(DASH_PREFIX + "ForceScoringPermission", false);
+        SmartDashboard.putBoolean(DASH_PREFIX + "ScoringPermissionOverride", false);
 
     }
 }
