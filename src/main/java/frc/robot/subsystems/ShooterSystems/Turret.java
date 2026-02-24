@@ -20,6 +20,7 @@ import frc.robot.Constants;
 
 public class Turret extends SubsystemBase
 {
+    private static final double DEGREES_PER_ROTATION = 360.0;
     private static final int CONFIG_RETRIES = 5;
     private static final double STATOR_CURRENT_LIMIT_AMPS = 10.0;   // Adjust as necessary to prevent damage to the motor and mechanism - set low rn for testing purposes
     private static final double SUPPLY_CURRENT_LIMIT_AMPS = 10.0;   // Adjust as necessary to prevent damage to the motor and mechanism - set low rn for testing purposes
@@ -50,16 +51,17 @@ public class Turret extends SubsystemBase
         turret_rotation_motor.setPosition(0.0);
     }
 
-    public void setAngle(double angle) 
+    public void setAngle(double angleDegrees) 
     {
-        turret_rotation_motor.setControl(motionMagicVoltage.withPosition(angle));
-        currentAngleSetPoint = angle; // Update the current angle preset for alignment checks
-        SmartDashboard.putNumber("Turret Set Point", angle);
+        double targetRotations = angleDegrees / DEGREES_PER_ROTATION;
+        turret_rotation_motor.setControl(motionMagicVoltage.withPosition(targetRotations));
+        currentAngleSetPoint = angleDegrees; // Degrees, for alignment checks and dashboard readability.
+        SmartDashboard.putNumber("Turret Set Point", angleDegrees);
     }
 
     public double getAngle()
     {
-        return turret_rotation_motor.getPosition().getValueAsDouble();
+        return turret_rotation_motor.getPosition().getValueAsDouble() * DEGREES_PER_ROTATION;
     }
 
     public double getAngleSetpoint()
