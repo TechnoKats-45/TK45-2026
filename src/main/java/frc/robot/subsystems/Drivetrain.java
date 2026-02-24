@@ -23,9 +23,7 @@ import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.Notifier;
-import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj.RobotController;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Subsystem;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
@@ -40,7 +38,6 @@ import frc.robot.generated.TunerConstants.TunerSwerveDrivetrain;
  * https://v6.docs.ctr-electronics.com/en/stable/docs/tuner/tuner-swerve/index.html
  */
 public class Drivetrain extends TunerSwerveDrivetrain implements Subsystem {
-    private static final String SIM_DASH_PREFIX = "Sim/";
     private static final double kSimLoopPeriod = 0.004; // 4 ms
     private Notifier m_simNotifier = null;
     private double m_lastSimTime;
@@ -136,7 +133,6 @@ public class Drivetrain extends TunerSwerveDrivetrain implements Subsystem {
         super(drivetrainConstants, modules);
         if (Utils.isSimulation()) {
             startSimThread();
-            initSimPoseControls();
         }
         configureAutoBuilder();
     }
@@ -162,7 +158,6 @@ public class Drivetrain extends TunerSwerveDrivetrain implements Subsystem {
         super(drivetrainConstants, odometryUpdateFrequency, modules);
         if (Utils.isSimulation()) {
             startSimThread();
-            initSimPoseControls();
         }
         configureAutoBuilder();
     }
@@ -196,7 +191,6 @@ public class Drivetrain extends TunerSwerveDrivetrain implements Subsystem {
         super(drivetrainConstants, odometryUpdateFrequency, odometryStandardDeviation, visionStandardDeviation, modules);
         if (Utils.isSimulation()) {
             startSimThread();
-            initSimPoseControls();
         }
         configureAutoBuilder();
     }
@@ -253,92 +247,7 @@ public class Drivetrain extends TunerSwerveDrivetrain implements Subsystem {
             });
         }
 
-        if (RobotBase.isSimulation()) {
-            handleSimPoseControls();
-        }
     }
-
-    private void initSimPoseControls() {
-        SmartDashboard.putBoolean(SIM_DASH_PREFIX + "SetPoseNow", false);
-        SmartDashboard.putBoolean(SIM_DASH_PREFIX + "LivePoseControl", false);
-        SmartDashboard.putNumber(SIM_DASH_PREFIX + "PoseX_m", 0.0);
-        SmartDashboard.putNumber(SIM_DASH_PREFIX + "PoseY_m", 0.0);
-        SmartDashboard.putNumber(SIM_DASH_PREFIX + "PoseDeg", 0.0);
-        SmartDashboard.putNumber(SIM_DASH_PREFIX + "NudgeStep_m", 0.25);
-        SmartDashboard.putNumber(SIM_DASH_PREFIX + "NudgeStep_deg", 10.0);
-        SmartDashboard.putBoolean(SIM_DASH_PREFIX + "NudgeXPlus", false);
-        SmartDashboard.putBoolean(SIM_DASH_PREFIX + "NudgeXMinus", false);
-        SmartDashboard.putBoolean(SIM_DASH_PREFIX + "NudgeYPlus", false);
-        SmartDashboard.putBoolean(SIM_DASH_PREFIX + "NudgeYMinus", false);
-        SmartDashboard.putBoolean(SIM_DASH_PREFIX + "NudgeHeadingPlus", false);
-        SmartDashboard.putBoolean(SIM_DASH_PREFIX + "NudgeHeadingMinus", false);
-    }
-
-    private void handleSimPoseControls() {
-        Pose2d pose = getState().Pose;
-        SmartDashboard.putNumber(SIM_DASH_PREFIX + "CurrentPoseX_m", pose.getX());
-        SmartDashboard.putNumber(SIM_DASH_PREFIX + "CurrentPoseY_m", pose.getY());
-        SmartDashboard.putNumber(SIM_DASH_PREFIX + "CurrentPoseDeg", pose.getRotation().getDegrees());
-        SmartDashboard.putString(SIM_DASH_PREFIX + "Hint",
-                "Use sliders PoseX/PoseY/PoseDeg with LivePoseControl=true, or one-shot SetPoseNow/Nudge buttons.");
-
-        if (SmartDashboard.getBoolean(SIM_DASH_PREFIX + "LivePoseControl", false)) {
-            double x = SmartDashboard.getNumber(SIM_DASH_PREFIX + "PoseX_m", pose.getX());
-            double y = SmartDashboard.getNumber(SIM_DASH_PREFIX + "PoseY_m", pose.getY());
-            double deg = SmartDashboard.getNumber(SIM_DASH_PREFIX + "PoseDeg", pose.getRotation().getDegrees());
-            resetPose(new Pose2d(x, y, Rotation2d.fromDegrees(deg)));
-            return;
-        }
-
-        if (SmartDashboard.getBoolean(SIM_DASH_PREFIX + "SetPoseNow", false)) {
-            double x = SmartDashboard.getNumber(SIM_DASH_PREFIX + "PoseX_m", pose.getX());
-            double y = SmartDashboard.getNumber(SIM_DASH_PREFIX + "PoseY_m", pose.getY());
-            double deg = SmartDashboard.getNumber(SIM_DASH_PREFIX + "PoseDeg", pose.getRotation().getDegrees());
-
-            resetPose(new Pose2d(x, y, Rotation2d.fromDegrees(deg)));
-            SmartDashboard.putBoolean(SIM_DASH_PREFIX + "SetPoseNow", false);
-        }
-
-        double nudgeM = SmartDashboard.getNumber(SIM_DASH_PREFIX + "NudgeStep_m", 0.25);
-        double nudgeDeg = SmartDashboard.getNumber(SIM_DASH_PREFIX + "NudgeStep_deg", 10.0);
-
-        if (consumeSimButton("NudgeXPlus")) {
-            applySimNudge(nudgeM, 0.0, 0.0);
-        }
-        if (consumeSimButton("NudgeXMinus")) {
-            applySimNudge(-nudgeM, 0.0, 0.0);
-        }
-        if (consumeSimButton("NudgeYPlus")) {
-            applySimNudge(0.0, nudgeM, 0.0);
-        }
-        if (consumeSimButton("NudgeYMinus")) {
-            applySimNudge(0.0, -nudgeM, 0.0);
-        }
-        if (consumeSimButton("NudgeHeadingPlus")) {
-            applySimNudge(0.0, 0.0, nudgeDeg);
-        }
-        if (consumeSimButton("NudgeHeadingMinus")) {
-            applySimNudge(0.0, 0.0, -nudgeDeg);
-        }
-    }
-
-    private boolean consumeSimButton(String keySuffix) {
-        String key = SIM_DASH_PREFIX + keySuffix;
-        if (SmartDashboard.getBoolean(key, false)) {
-            SmartDashboard.putBoolean(key, false);
-            return true;
-        }
-        return false;
-    }
-
-    private void applySimNudge(double dxM, double dyM, double dDeg) {
-        Pose2d pose = getState().Pose;
-        resetPose(new Pose2d(
-                pose.getX() + dxM,
-                pose.getY() + dyM,
-                pose.getRotation().plus(Rotation2d.fromDegrees(dDeg))));
-    }
-
     private void startSimThread() {
         m_lastSimTime = Utils.getCurrentTimeSeconds();
 
