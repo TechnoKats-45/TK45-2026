@@ -30,13 +30,13 @@ public class RightIntake extends SubsystemBase
     private static final double MM_ACCEL_RPS2 = 5.0;
     private static final double SENSOR_TO_MECHANISM_RATIO = 0; // TOOD - Set this for the intake sprot box
     //PID - TODO tune
-    
+    // PIVOT PID
     private static final double SLOT0_KS = 0.0;
     private static final double SLOT0_KV = 0.0;
     private static final double SLOT0_KP = 10.0;
     private static final double SLOT0_KI = 0.0;
     private static final double SLOT0_KD = 1.0;
-
+    // Rollor PID
     private static final double SLOT1_KS = 0.0;
     private static final double SLOT1_KV = 0.0;
     private static final double SLOT1_KP = 10.0;
@@ -175,11 +175,11 @@ public class RightIntake extends SubsystemBase
                         .withMotionMagicCruiseVelocity(RotationsPerSecond.of(MM_CRUISE_RPS))
                         .withMotionMagicAcceleration(RotationsPerSecondPerSecond.of(MM_ACCEL_RPS2)));
 
-        IntakeSpinConfigs.Slot1.kS = SLOT1_KS;
-        IntakeSpinConfigs.Slot1.kV = SLOT1_KV;
-        IntakeSpinConfigs.Slot1.kP = SLOT1_KP;
-        IntakeSpinConfigs.Slot1.kI = SLOT1_KI;
-        IntakeSpinConfigs.Slot1.kD = SLOT1_KD;
+        IntakeSpinConfigs.Slot0.kS = SLOT1_KS;
+        IntakeSpinConfigs.Slot0.kV = SLOT1_KV;
+        IntakeSpinConfigs.Slot0.kP = SLOT1_KP;
+        IntakeSpinConfigs.Slot0.kI = SLOT1_KI;
+        IntakeSpinConfigs.Slot0.kD = SLOT1_KD;
         IntakeSpinConfigs.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;// might need to tweek this
         IntakeSpinConfigs.Voltage
                 .withPeakForwardVoltage(Volts.of(PEAK_FORWARD_VOLTS))
