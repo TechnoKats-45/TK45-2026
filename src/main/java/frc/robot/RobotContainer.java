@@ -13,12 +13,18 @@ import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
+import frc.robot.commands.AutoShoot;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.*;
+import frc.robot.subsystems.ShooterSystems.Hood;
+import frc.robot.subsystems.ShooterSystems.Shooter;
+import frc.robot.subsystems.ShooterSystems.ShotCalculator;
+import frc.robot.subsystems.ShooterSystems.Turret;
 public class RobotContainer 
 {
     private double MaxSpeed = 1.0 * TunerConstants.kSpeedAt12Volts.in(MetersPerSecond); // kSpeedAt12Volts desired top speed, change multiplier to change max speed
@@ -32,17 +38,45 @@ public class RobotContainer
 
     private final Telemetry logger = new Telemetry(MaxSpeed);
 
-    private final CommandXboxController driver = new CommandXboxController(0); // Drive controller
+    private final CommandXboxController driver = new CommandXboxController(0);      // Drive controller
     private final CommandXboxController operator = new CommandXboxController(1);    // Operator controller
-    private final CommandXboxController test = new CommandXboxController(2); 
+    private final CommandXboxController test = new CommandXboxController(2);        // Test controller
 
     public final Drivetrain drivetrain = TunerConstants.createDrivetrain();
     public final Climber s_climber = new Climber();
+    public final Shooter s_shooter = new Shooter();
+    public final Hood s_hood = new Hood();
+    public final Turret s_turret = new Turret();
+    public final Spindex s_spindex = new Spindex();
+    public final BallElevator s_ballElevator = new BallElevator();
+    public final ShotCalculator s_shotCalculator = new ShotCalculator(drivetrain);
+
+    private final AutoShoot autoShootCommand = new AutoShoot(
+            drivetrain,
+            s_shooter,
+            s_hood,
+            s_turret,
+            s_spindex,
+            s_ballElevator,
+            s_shotCalculator,
+            () -> true, // TODO: replace with operator button/toggle when available
+            () -> {
+                // Sim helper: allow forcing score-enable without a physical LT input.
+                if (RobotBase.isSimulation()
+                        && SmartDashboard.getBoolean("AutoShoot/ForceScoreEnable", false)) {
+                    return true;
+                }
+                // Hold LT to allow hub scoring on scoring side.
+                return operator.getLeftTriggerAxis() > 0.5;
+            },
+            () -> true // TODO: replace/augment with explicit external scoring-window signal if desired
+    );
     
     private final SendableChooser<Command> autoChooser; 
 
     public RobotContainer() 
     {
+        SmartDashboard.putBoolean("AutoShoot/ForceScoreEnable", false);
         configureBindings();
 
         if (drivetrain.isAutoBuilderConfigured()) {
@@ -70,6 +104,8 @@ public class RobotContainer
             )
         );
 
+        s_shooter.setDefaultCommand(autoShootCommand);
+
         // Idle while the robot is disabled. This ensures the configured
         // neutral mode is applied to the drive motors while disabled.
         final var idle = new SwerveRequest.Idle();
@@ -89,10 +125,10 @@ public class RobotContainer
         driver.start().and(driver.y()).whileTrue(drivetrain.sysIdQuasistatic(Direction.kForward));
         driver.start().and(driver.x()).whileTrue(drivetrain.sysIdQuasistatic(Direction.kReverse));
 
-        driver.leftBumper().whileTrue(); // Intake Left
-        driver.rightBumper().whileTrue(); // Intake Right
+        //driver.leftBumper().whileTrue(); // Intake Left
+        //driver.rightBumper().whileTrue(); // Intake Right
 
-        driver.rightTrigger().whileTrue(); // Manual Shoot
+        //driver.rightTrigger().whileTrue(); // Manual Shoot
 
         drivetrain.registerTelemetry(logger::telemeterize);
 

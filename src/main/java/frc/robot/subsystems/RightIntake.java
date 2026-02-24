@@ -30,13 +30,13 @@ public class RightIntake extends SubsystemBase
     private static final double MM_ACCEL_RPS2 = 5.0;
     private static final double SENSOR_TO_MECHANISM_RATIO = 0; // TOOD - Set this for the intake sprot box
     //PID - TODO tune
-    // PID for Pivot
+    
     private static final double SLOT0_KS = 0.0;
     private static final double SLOT0_KV = 0.0;
     private static final double SLOT0_KP = 10.0;
     private static final double SLOT0_KI = 0.0;
     private static final double SLOT0_KD = 1.0;
-    // PID for Rollor
+
     private static final double SLOT1_KS = 0.0;
     private static final double SLOT1_KV = 0.0;
     private static final double SLOT1_KP = 10.0;
@@ -61,67 +61,72 @@ public class RightIntake extends SubsystemBase
     private double currentSpeedSetpointRps = 0.0;
 
 
-  public RightIntake()
-  {
-    intake_pivot_motor = new TalonFX(Constants.CAN_ID.INTAKE_RIGHT_ROTATE);//need to set CAN ID might have to change how it is set because of different motors
+    public RightIntake()
+    {
+        intake_pivot_motor = new TalonFX(Constants.CAN_ID.INTAKE_RIGHT_ROTATE);//need to set CAN ID might have to change how it is set because of different motors
         configurePivotMotor(); //TODO Need pass throughs
-    intake_roller_motor = new TalonFX(Constants.CAN_ID.INTAKE_RIGHT);//need to set CAN ID might have to change how it is set because of different motors
+        intake_roller_motor = new TalonFX(Constants.CAN_ID.INTAKE_RIGHT);//need to set CAN ID might have to change how it is set because of different motors
         configureSpinMotor(); //TODO Need pass throughs
-  }
- 
-  public void zeroEncoder() 
-  {
-     intake_pivot_motor.setPosition(0.0);
-  }
+    }
+    
+    public void zeroEncoder() 
+    {
+        intake_pivot_motor.setPosition(0.0);
+    }
 
     // pivot code
 
-  public void setAngle(double angle)
-  {
-     intake_pivot_motor.setControl(motionMagicVoltage.withPosition(angle));
+    public void setAngle(double angle)
+    {
+        intake_pivot_motor.setControl(motionMagicVoltage.withPosition(angle));
         currentAngleSetPoint = angle; // Update the current angle preset for alignment checks
         SmartDashboard.putNumber("RIGHT Intake Set Point", angle);
-  }
+    }
 
-  public double getAngle()
-  {
-     return intake_pivot_motor.getPosition().getValueAsDouble();
-  }
+    public double getAngle()
+    {
+        return intake_pivot_motor.getPosition().getValueAsDouble();
+    }
 
-  public boolean isAligned()
+    public boolean isAligned()
     {
         return Math.abs(getAngle() - currentAngleSetPoint) <= Constants.Intake.AngleToleranceDegrees; //TODO TUNE
     }
     // Code for rollers
-  public void setSpeed(double speedRps) {
+    public void setSpeed(double speedRps) 
+    {
         currentSpeedSetpointRps = speedRps;
         intake_roller_motor.setControl(velocityRequest.withVelocity(currentSpeedSetpointRps));
         SmartDashboard.putNumber("RIGHT Intake Speed Setpoint RPS", currentSpeedSetpointRps);
     }
 
     
-    public void runFeed(double percentOutput) {
+    public void runFeed(double percentOutput) 
+    {
         double clamped = MathUtil.clamp(percentOutput, -1.0, 1.0);
         setSpeed(clamped * MAX_INTAKE_SPEED_RPS);
     }
 
-    public double getSpeed() {
+    public double getSpeed() 
+    {
         return intake_roller_motor.getVelocity().getValueAsDouble();
     }
 
 
-    public boolean isAtSpeed(double toleranceRps) {
+    public boolean isAtSpeed(double toleranceRps) 
+    {
         return Math.abs(getSpeed() - currentSpeedSetpointRps) <= toleranceRps;
     }
 
-    public void stop() {
+    public void stop() 
+    {
         currentSpeedSetpointRps = 0.0;
         intake_roller_motor.stopMotor();
     }
 
 
     // TODO Add second congfig. for spin motors
-  private void configurePivotMotor()
+    private void configurePivotMotor()
     {
         TalonFXConfiguration IntakePivotConfigs = new TalonFXConfiguration()
                 .withCurrentLimits(new CurrentLimitsConfigs()
@@ -140,7 +145,7 @@ public class RightIntake extends SubsystemBase
         IntakePivotConfigs.Slot0.kP = SLOT0_KP;
         IntakePivotConfigs.Slot0.kI = SLOT0_KI;
         IntakePivotConfigs.Slot0.kD = SLOT0_KD;
-        IntakePivotConfigs.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;// might need to tweek this
+        IntakePivotConfigs.MotorOutput.Inverted = InvertedValue.Clockwise_Positive; // might need to tweek this
         IntakePivotConfigs.Voltage
                 .withPeakForwardVoltage(Volts.of(PEAK_FORWARD_VOLTS))
                 .withPeakReverseVoltage(Volts.of(PEAK_REVERSE_VOLTS));
@@ -170,11 +175,11 @@ public class RightIntake extends SubsystemBase
                         .withMotionMagicCruiseVelocity(RotationsPerSecond.of(MM_CRUISE_RPS))
                         .withMotionMagicAcceleration(RotationsPerSecondPerSecond.of(MM_ACCEL_RPS2)));
 
-        IntakeSpinConfigs.Slot0.kS = SLOT1_KS;
-        IntakeSpinConfigs.Slot0.kV = SLOT1_KV;
-        IntakeSpinConfigs.Slot0.kP = SLOT1_KP;
-        IntakeSpinConfigs.Slot0.kI = SLOT1_KI;
-        IntakeSpinConfigs.Slot0.kD = SLOT1_KD;
+        IntakeSpinConfigs.Slot1.kS = SLOT1_KS;
+        IntakeSpinConfigs.Slot1.kV = SLOT1_KV;
+        IntakeSpinConfigs.Slot1.kP = SLOT1_KP;
+        IntakeSpinConfigs.Slot1.kI = SLOT1_KI;
+        IntakeSpinConfigs.Slot1.kD = SLOT1_KD;
         IntakeSpinConfigs.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;// might need to tweek this
         IntakeSpinConfigs.Voltage
                 .withPeakForwardVoltage(Volts.of(PEAK_FORWARD_VOLTS))

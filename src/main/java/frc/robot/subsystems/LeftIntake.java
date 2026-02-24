@@ -61,39 +61,39 @@ public class LeftIntake extends SubsystemBase
     private double currentSpeedSetpointRps = 0.0;
 
 
-  public LeftIntake()
-  {
-    intake_pivot_motor = new TalonFX(Constants.CAN_ID.INTAKE_LEFT_ROTATE);//need to set CAN ID might have to change how it is set because of different motors
+    public LeftIntake()
+    {
+        intake_pivot_motor = new TalonFX(Constants.CAN_ID.INTAKE_LEFT_ROTATE);//need to set CAN ID might have to change how it is set because of different motors
         configurePivotMotor(); //TODO Need pass throughs
-    intake_roller_motor = new TalonFX(Constants.CAN_ID.INTAKE_LEFT);//need to set CAN ID might have to change how it is set because of different motors
+        intake_roller_motor = new TalonFX(Constants.CAN_ID.INTAKE_LEFT);//need to set CAN ID might have to change how it is set because of different motors
         configureSpinMotor(); //TODO Need pass throughs
-  }
- 
-  public void zeroEncoder() 
-  {
-     intake_pivot_motor.setPosition(0.0);
-  }
+    }
+
+    public void zeroEncoder() 
+    {
+        intake_pivot_motor.setPosition(0.0);
+    }
 
     // pivot code
 
-  public void setAngle(double angle)
-  {
-     intake_pivot_motor.setControl(motionMagicVoltage.withPosition(angle));
+    public void setAngle(double angle)
+    {
+        intake_pivot_motor.setControl(motionMagicVoltage.withPosition(angle));
         currentAngleSetPoint = angle; // Update the current angle preset for alignment checks
         SmartDashboard.putNumber("LEFT Intake Set Point", angle);
-  }
+    }
 
-  public double getAngle()
-  {
-     return intake_pivot_motor.getPosition().getValueAsDouble();
-  }
+    public double getAngle()
+    {
+        return intake_pivot_motor.getPosition().getValueAsDouble();
+    }
 
-  public boolean isAligned()
+    public boolean isAligned()
     {
         return Math.abs(getAngle() - currentAngleSetPoint) <= Constants.Intake.AngleToleranceDegrees; //TODO TUNE
     }
     // Code for rollers
-  public void setSpeed(double speedRps) {
+    public void setSpeed(double speedRps) {
         currentSpeedSetpointRps = speedRps;
         intake_roller_motor.setControl(velocityRequest.withVelocity(currentSpeedSetpointRps));
         SmartDashboard.putNumber("LEFT Intake LEFT Speed Setpoint RPS", currentSpeedSetpointRps);
@@ -121,7 +121,7 @@ public class LeftIntake extends SubsystemBase
 
 
     // TODO Add second congfig. for spin motors
-  private void configurePivotMotor()
+    private void configurePivotMotor()
     {
         TalonFXConfiguration IntakePivotConfigs = new TalonFXConfiguration()
                 .withCurrentLimits(new CurrentLimitsConfigs()

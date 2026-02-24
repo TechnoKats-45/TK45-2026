@@ -40,6 +40,7 @@ public class ShotCalculator extends SubsystemBase {
     @Log
     @Tunable
     private double targetSpeedRps = 8;
+    private boolean useManualTargetSpeed = false;
 
     public ShotCalculator(Drivetrain drivetrain) {
         this.drivetrain = drivetrain;
@@ -50,7 +51,9 @@ public class ShotCalculator extends SubsystemBase {
         Pose2d drivetrainPose = drivetrain.getState().Pose;
 
         targetDistance = drivetrainPose.getTranslation().getDistance(targetLocation.toPose2d().getTranslation());
-        targetSpeedRps = DISTANCE_TO_SHOT_SPEED.get(targetDistance);
+        if (!useManualTargetSpeed) {
+            targetSpeedRps = DISTANCE_TO_SHOT_SPEED.get(targetDistance);
+        }
 
         Pose3d shooterPose = new Pose3d(drivetrainPose).plus(BALL_TRANSFORM_CENTER);
 
@@ -60,17 +63,27 @@ public class ShotCalculator extends SubsystemBase {
                 drivetrainSpeeds, prevDrivetrainSpeeds, 0.02);
         prevDrivetrainSpeeds = drivetrainSpeeds;
 
-        currentInterceptSolution = ShootOnTheFlyCalculator.solveShootOnTheFly(shooterPose, targetLocation,
-                drivetrainSpeeds, drivetrainAccelerations, targetSpeedRps,
-                5, 0.01);
+        try {
+            currentInterceptSolution = ShootOnTheFlyCalculator.solveShootOnTheFly(shooterPose, targetLocation,
+                    drivetrainSpeeds, drivetrainAccelerations, targetSpeedRps,
+                    5, 0.01);
+        } catch (IllegalArgumentException ex) {
+            currentInterceptSolution = new InterceptSolution(Pose3d.kZero, 0.0, 0.0, 0.0, 0.0);
+        }
 
         currentEffectiveTargetPose = currentInterceptSolution.effectiveTargetPose();
         currentEffectiveYaw = currentInterceptSolution.requiredYaw();
     }
 
+    public void setTarget(Pose3d targetLocation) {
+        this.targetLocation = targetLocation;
+        this.useManualTargetSpeed = false;
+    }
+
     public void setTarget(Pose3d targetLocation, double targetSpeedRps) {
         this.targetLocation = targetLocation;
         this.targetSpeedRps = targetSpeedRps;
+        this.useManualTargetSpeed = true;
     }
 
     public Pose3d getCurrentEffectiveTargetPose() {
