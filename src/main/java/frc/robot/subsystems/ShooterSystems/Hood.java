@@ -20,6 +20,7 @@ import frc.robot.Constants;
 
 public class Hood extends SubsystemBase
 {
+    private static final double DEGREES_PER_ROTATION = 360.0;
     private static final int CONFIG_RETRIES = 5;
     
     private static final double STATOR_CURRENT_LIMIT_AMPS = 10.0;   // TODO - Adjust as necessary to prevent damage to the motor and mechanism - set low rn for testing purposes
@@ -51,16 +52,17 @@ public class Hood extends SubsystemBase
         hood_rotation_motor.setPosition(0.0);
     }
 
-    public void setAngle(double angle) 
+    public void setAngle(double angleDegrees) 
     {
-        hood_rotation_motor.setControl(motionMagicVoltage.withPosition(angle));
-        currentAngleSetPoint = angle; // Update the current angle preset for alignment checks
-        SmartDashboard.putNumber("Hood Set Point", angle);
+        double targetRotations = angleDegrees / DEGREES_PER_ROTATION;
+        hood_rotation_motor.setControl(motionMagicVoltage.withPosition(targetRotations));
+        currentAngleSetPoint = angleDegrees; // Degrees, for alignment checks and dashboard readability.
+        SmartDashboard.putNumber("Hood Set Point", angleDegrees);
     }
 
     public double getAngle()
     {
-        return hood_rotation_motor.getPosition().getValueAsDouble();
+        return hood_rotation_motor.getPosition().getValueAsDouble() * DEGREES_PER_ROTATION;
     }
 
     public double getAngleSetpoint()
