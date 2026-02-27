@@ -102,6 +102,7 @@ public class Constants
     public class Ball_Elevator
     {
         public static final double ELEVATOR_SPEED = 0.5; // TODO - TUNE
+        public static final double MAX_ELEVATOR_SPEED_RPS = 40; // TODO - TUNE
     }
 
     public class Intake

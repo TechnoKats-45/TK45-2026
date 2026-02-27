@@ -7,10 +7,12 @@ import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
 import com.ctre.phoenix6.configs.FeedbackConfigs;
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
+import com.ctre.phoenix6.controls.MotionMagicVelocityVoltage;
 import com.ctre.phoenix6.controls.VelocityTorqueCurrentFOC;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.FeedbackSensorSourceValue;
 import com.ctre.phoenix6.signals.InvertedValue;
+import com.ctre.phoenix6.configs.MotionMagicConfigs;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -41,6 +43,7 @@ public class Spindex extends SubsystemBase
     private final TalonFX spindexMotor;
     private final VelocityTorqueCurrentFOC velocityRequest = new VelocityTorqueCurrentFOC(0);
     private double currentSpeedSetpointRps = 0.0;
+    private final MotionMagicVelocityVoltage motionMagicVelocityRequest = new MotionMagicVelocityVoltage(0);
 
     public Spindex() 
     {
@@ -51,7 +54,7 @@ public class Spindex extends SubsystemBase
     public void setSpeed(double speedRps) 
     {
         currentSpeedSetpointRps = speedRps;
-        spindexMotor.setControl(velocityRequest.withVelocity(currentSpeedSetpointRps));
+        spindexMotor.setControl(motionMagicVelocityRequest.withVelocity(currentSpeedSetpointRps));
         SmartDashboard.putNumber("Spindex Speed Setpoint RPS", currentSpeedSetpointRps);
     }
 

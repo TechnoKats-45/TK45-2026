@@ -5,6 +5,7 @@
 package frc.robot;
 
 import static edu.wpi.first.units.Units.*;
+import edu.wpi.first.math.MathUtil;
 import com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType;
 import com.ctre.phoenix6.swerve.SwerveRequest;
 import com.pathplanner.lib.auto.AutoBuilder;
@@ -14,6 +15,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.RobotBase;
+import edu.wpi.first.wpilibj.RobotState;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
@@ -42,6 +44,12 @@ public class RobotContainer
     private final CommandXboxController operator = new CommandXboxController(1);    // Operator controller
     private final CommandXboxController test = new CommandXboxController(2);        // Test controller
 
+    private static final double TEST_SPINDEX_STEP = 0.1;
+    private static final double TEST_SHOOTER_STEP = 0.1;
+    private static final double TEST_SHOOTER_MAX_SPEED_RPS = 40.0;
+    private double testSpindexPercent = 0.0;
+    private double testShooterPercent = 0.0;
+
     public final Drivetrain drivetrain = TunerConstants.createDrivetrain();
     public final Climber s_climber = new Climber();
     public final Shooter s_shooter = new Shooter();
@@ -59,9 +67,12 @@ public class RobotContainer
             s_spindex,
             s_ballElevator,
             s_shotCalculator,
-            () -> operator.getLeftTriggerAxis() <= 0.5, // Inverted LT behavior: AutoShoot runs unless LT is held.
+            () -> !RobotState.isTest() && operator.getLeftTriggerAxis() <= 0.5, // Inverted LT behavior: AutoShoot runs unless LT is held.
             () -> 
             {
+                if (RobotState.isTest()) {
+                    return false;
+                }
                 // Sim helper: allow forcing score-enable without a physical LT input.
                 if (RobotBase.isSimulation()
                         && SmartDashboard.getBoolean("AutoShoot/ForceScoreEnable", false)) {
@@ -77,6 +88,9 @@ public class RobotContainer
     public RobotContainer() 
     {
         SmartDashboard.putBoolean("AutoShoot/ForceScoreEnable", false);
+        SmartDashboard.putNumber("Test/SpindexPercent", testSpindexPercent);
+        SmartDashboard.putNumber("Test/ShooterPercent", testShooterPercent);
+        SmartDashboard.putNumber("Test/ShooterSetpointRPS", 0.0);
         configureBindings();
 
         if (drivetrain.isAutoBuilderConfigured()) {
@@ -104,7 +118,7 @@ public class RobotContainer
             )
         );
 
-        s_shooter.setDefaultCommand(autoShootCommand);
+        s_shooter.setDefaultCommand(autoShootCommand.onlyIf(() -> !RobotState.isTest()));
 
         // Idle while the robot is disabled. This ensures the configured
         // neutral mode is applied to the drive motors while disabled.
@@ -133,8 +147,46 @@ public class RobotContainer
         drivetrain.registerTelemetry(logger::telemeterize);
 
         //TEST:
+        //CLimber:
         test.a().onTrue(s_climber.runOnce(() -> s_climber.setHeightInches(Constants.Climber.MIN_HEIGHT_INCHES))); // a goes to minimum climber height
         test.y().onTrue(s_climber.runOnce(() -> s_climber.setHeightInches(Constants.Climber.MAX_HEIGHT_INCHES))); // y goes to max climber height
+        //Spindex:
+        test.povUp().onTrue(s_spindex.runOnce(() -> {
+            testSpindexPercent = MathUtil.clamp(testSpindexPercent + TEST_SPINDEX_STEP, -1.0, 1.0);
+            s_spindex.runFeed(testSpindexPercent);
+            SmartDashboard.putNumber("Test/SpindexPercent", testSpindexPercent);
+        }));
+        test.povDown().onTrue(s_spindex.runOnce(() -> {
+            testSpindexPercent = MathUtil.clamp(testSpindexPercent - TEST_SPINDEX_STEP, -1.0, 1.0);
+            s_spindex.runFeed(testSpindexPercent);
+            SmartDashboard.putNumber("Test/SpindexPercent", testSpindexPercent);
+        }));
+        //Shooter
+        test.rightBumper().onTrue(s_shooter.runOnce(() -> {
+            testShooterPercent = MathUtil.clamp(testShooterPercent + TEST_SHOOTER_STEP, 0.0, 1.0);
+            double targetRps = testShooterPercent * TEST_SHOOTER_MAX_SPEED_RPS;
+            s_shooter.setTargetSpeedRps(targetRps);
+            SmartDashboard.putNumber("Test/ShooterPercent", testShooterPercent);
+            SmartDashboard.putNumber("Test/ShooterSetpointRPS", targetRps);
+        }));
+        test.leftBumper().onTrue(s_shooter.runOnce(() -> {
+            testShooterPercent = MathUtil.clamp(testShooterPercent - TEST_SHOOTER_STEP, 0.0, 1.0);
+            double targetRps = testShooterPercent * TEST_SHOOTER_MAX_SPEED_RPS;
+            s_shooter.setTargetSpeedRps(targetRps);
+            SmartDashboard.putNumber("Test/ShooterPercent", testShooterPercent);
+            SmartDashboard.putNumber("Test/ShooterSetpointRPS", targetRps);
+        }));
+        // Test Ball Elevator
+        test.povRight().onTrue(s_ballElevator.runOnce(() -> {
+            s_ballElevator.setSpeed(s_ballElevator.getSpeed()+(Constants.Ball_Elevator.MAX_ELEVATOR_SPEED_RPS/10));
+        }));
+        test.povLeft().onTrue(s_ballElevator.runOnce(() -> {
+            s_ballElevator.setSpeed(s_ballElevator.getSpeed()-(Constants.Ball_Elevator.MAX_ELEVATOR_SPEED_RPS/10));
+        }));
+
+        // TEST Hood
+        // TEST INTAKE LR
+        // TEST TURRET
     }
 
     public Command getAutonomousCommand() 

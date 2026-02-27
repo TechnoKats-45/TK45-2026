@@ -7,10 +7,13 @@ import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
 import com.ctre.phoenix6.configs.FeedbackConfigs;
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
+import com.ctre.phoenix6.controls.MotionMagicVelocityVoltage;
 import com.ctre.phoenix6.controls.VelocityTorqueCurrentFOC;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.FeedbackSensorSourceValue;
 import com.ctre.phoenix6.signals.InvertedValue;
+import com.ctre.phoenix6.configs.MotionMagicConfigs;
+
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -34,8 +37,11 @@ public class BallElevator extends SubsystemBase {
     private static final double PEAK_REVERSE_VOLTS = -16.0;
 
     private static final double SPEED_TOLERANCE_RPS = 0.5;
-    private static final double MAX_ELEVATOR_SPEED_RPS = 40.0; // TODO - tune
+    private static final double MAX_ELEVATOR_SPEED_RPS = Constants.Ball_Elevator.MAX_ELEVATOR_SPEED_RPS; // TODO - tune
     private static final InvertedValue MOTOR_INVERTED = InvertedValue.CounterClockwise_Positive;
+
+    private final MotionMagicVelocityVoltage motionMagicVelocityRequest = new MotionMagicVelocityVoltage(0);
+
 
     private final TalonFX ballElevatorMotor;
     private final VelocityTorqueCurrentFOC velocityRequest = new VelocityTorqueCurrentFOC(0);
@@ -48,7 +54,7 @@ public class BallElevator extends SubsystemBase {
 
     public void setSpeed(double speedRps) {
         currentSpeedSetpointRps = speedRps;
-        ballElevatorMotor.setControl(velocityRequest.withVelocity(currentSpeedSetpointRps));
+        ballElevatorMotor.setControl(motionMagicVelocityRequest.withVelocity(currentSpeedSetpointRps));
         SmartDashboard.putNumber("Ball Elevator Speed Setpoint RPS", currentSpeedSetpointRps);
     }
 
