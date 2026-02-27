@@ -71,9 +71,9 @@ public class RightIntake extends SubsystemBase
 
     public RightIntake()
     {
-        intake_pivot_motor = new TalonFX(Constants.CAN_ID.INTAKE_RIGHT_ROTATE);//need to set CAN ID might have to change how it is set because of different motors
+        intake_pivot_motor = new TalonFX(Constants.CAN_ID.INTAKE_RIGHT_ROTATE, Constants.CAN_BUS.RIO);//need to set CAN ID might have to change how it is set because of different motors
         configurePivotMotor(); //TODO Need pass throughs
-        intake_roller_motor = new TalonFX(Constants.CAN_ID.INTAKE_RIGHT);//need to set CAN ID might have to change how it is set because of different motors
+        intake_roller_motor = new TalonFX(Constants.CAN_ID.INTAKE_RIGHT, Constants.CAN_BUS.RIO);//need to set CAN ID might have to change how it is set because of different motors
         configureSpinMotor(); //TODO Need pass throughs
     }
     
