@@ -48,7 +48,7 @@ public class BallElevator extends SubsystemBase {
     private double currentSpeedSetpointRps = 0.0;
 
     public BallElevator() {
-        ballElevatorMotor = new TalonFX(Constants.CAN_ID.BALL_ELEVATOR, Constants.CAN_BUS.RIO);
+        ballElevatorMotor = new TalonFX(Constants.CAN_ID.BALL_ELEVATOR, Constants.CAN_BUS.CANIVORE);
         configureMotor();
     }
 

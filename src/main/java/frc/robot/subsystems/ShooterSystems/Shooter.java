@@ -49,8 +49,8 @@ public class Shooter extends SubsystemBase
     private double currentSpeedSetpointRps = 0.0;
 
     public Shooter() {
-        shooterLeftMotor = new TalonFX(Constants.CAN_ID.SHOOTER_LEFT, Constants.CAN_BUS.RIO);
-        shooterRightMotor = new TalonFX(Constants.CAN_ID.SHOOTER_RIGHT, Constants.CAN_BUS.RIO);
+        shooterLeftMotor = new TalonFX(Constants.CAN_ID.SHOOTER_LEFT, Constants.CAN_BUS.CANIVORE);
+        shooterRightMotor = new TalonFX(Constants.CAN_ID.SHOOTER_RIGHT, Constants.CAN_BUS.CANIVORE);
         configureMotor(shooterLeftMotor, LEFT_MOTOR_INVERTED, "left shooter");
         configureMotor(shooterRightMotor, RIGHT_MOTOR_INVERTED, "right shooter");
     }
@@ -64,6 +64,10 @@ public class Shooter extends SubsystemBase
 
     public void setTargetSpeedRps(double speedRps) {
         setSpeed(speedRps);
+    }
+    public void setDumbSpeed(double percent) {
+        shooterLeftMotor.set(percent);
+        shooterRightMotor.set(percent);
     }
 
     public double getSpeed() {

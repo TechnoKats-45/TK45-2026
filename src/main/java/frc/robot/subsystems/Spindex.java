@@ -29,7 +29,7 @@ public class Spindex extends SubsystemBase
 
     private static final double SLOT0_KS = 0.0; // TODO - tune
     private static final double SLOT0_KV = 0.0; // TODO - tune
-    private static final double SLOT0_KP = 0.2; // TODO - tune
+    private static final double SLOT0_KP = 1; // TODO - tune
     private static final double SLOT0_KI = 0.0; // TODO - tune
     private static final double SLOT0_KD = 0.0; // TODO - tune
 
@@ -37,7 +37,7 @@ public class Spindex extends SubsystemBase
     private static final double PEAK_REVERSE_VOLTS = -16.0;
 
     private static final double SPEED_TOLERANCE_RPS = 0.5;
-    private static final double MAX_SPINDEX_SPEED_RPS = 40.0; // TODO - tune
+    private static final double MAX_SPINDEX_SPEED_RPS = 35; // TODO - tune
     private static final InvertedValue MOTOR_INVERTED = InvertedValue.CounterClockwise_Positive;
 
     private final TalonFX spindexMotor;
@@ -47,7 +47,7 @@ public class Spindex extends SubsystemBase
 
     public Spindex() 
     {
-        spindexMotor = new TalonFX(Constants.CAN_ID.SPINDEXER, Constants.CAN_BUS.RIO);
+        spindexMotor = new TalonFX(Constants.CAN_ID.SPINDEXER, Constants.CAN_BUS.CANIVORE);
         configureMotor();
     }
 
@@ -55,7 +55,12 @@ public class Spindex extends SubsystemBase
     {
         currentSpeedSetpointRps = speedRps;
         spindexMotor.setControl(motionMagicVelocityRequest.withVelocity(currentSpeedSetpointRps));
+        //spindexMotor.set(speedRps);
         SmartDashboard.putNumber("Spindex Speed Setpoint RPS", currentSpeedSetpointRps);
+    }
+    public void setDumbSpeed(double percent) 
+    {
+        spindexMotor.set(percent);
     }
 
     // Compatibility with existing callsites that currently use percent output.

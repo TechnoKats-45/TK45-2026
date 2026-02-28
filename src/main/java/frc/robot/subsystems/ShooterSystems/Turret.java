@@ -42,7 +42,7 @@ public class Turret extends SubsystemBase
 
     public Turret()
     {
-        turret_rotation_motor = new TalonFX(Constants.CAN_ID.TURRET, Constants.CAN_BUS.RIO);
+        turret_rotation_motor = new TalonFX(Constants.CAN_ID.TURRET, Constants.CAN_BUS.CANIVORE);
         configureTurretMotor();
     }
 

@@ -120,7 +120,7 @@ public class RobotContainer
             )
         );
 
-        s_shooter.setDefaultCommand(autoShootCommand.onlyIf(() -> !RobotState.isTest()));
+        //s_shooter.setDefaultCommand(autoShootCommand.onlyIf(() -> !RobotState.isTest()));
 
         // Idle while the robot is disabled. This ensures the configured
         // neutral mode is applied to the drive motors while disabled.
@@ -154,35 +154,40 @@ public class RobotContainer
         test.y().onTrue(s_climber.runOnce(() -> s_climber.setHeightInches(Constants.Climber.MAX_HEIGHT_INCHES))); // y goes to max climber height
         // Right Intake
         test.b().onTrue(r_Intake.runOnce(() -> r_Intake.setAngle(Constants.RightIntake.maxPivotAngle)));
-        test.rightTrigger().whileTrue(r_Intake.runOnce(() -> r_Intake.runFeed(0.5))); // testing at 50% speed
+        test.rightTrigger().whileTrue(r_Intake.runOnce(() -> r_Intake.runFeed(0.5)));
+        test.rightTrigger().whileFalse(r_Intake.runOnce(() -> r_Intake.stop())); 
+         // testing at 50% speed
         // Left Intake
         test.x().onTrue(r_Intake.runOnce(() -> l_Intake.setAngle(Constants.LeftIntake.maxPivotAngle)));
         test.leftTrigger().whileTrue(l_Intake.runOnce(() -> l_Intake.runFeed(0.5))); // testing at 50% speed
+        test.leftTrigger().whileFalse(l_Intake.runOnce(() -> l_Intake.stop()));
         //Spindex:
         test.povUp().onTrue(s_spindex.runOnce(() -> {
             testSpindexPercent = MathUtil.clamp(testSpindexPercent + TEST_SPINDEX_STEP, -1.0, 1.0);
-            s_spindex.runFeed(testSpindexPercent);
+            s_spindex.setDumbSpeed(testSpindexPercent);
             SmartDashboard.putNumber("Test/SpindexPercent", testSpindexPercent);
         }));
         test.povDown().onTrue(s_spindex.runOnce(() -> {
             testSpindexPercent = MathUtil.clamp(testSpindexPercent - TEST_SPINDEX_STEP, -1.0, 1.0);
-            s_spindex.runFeed(testSpindexPercent);
+            s_spindex.setDumbSpeed(testSpindexPercent);
             SmartDashboard.putNumber("Test/SpindexPercent", testSpindexPercent);
         }));
         //Shooter
         test.rightBumper().onTrue(s_shooter.runOnce(() -> {
-            testShooterPercent = MathUtil.clamp(testShooterPercent + TEST_SHOOTER_STEP, 0.0, 1.0);
-            double targetRps = testShooterPercent * TEST_SHOOTER_MAX_SPEED_RPS;
-            s_shooter.setTargetSpeedRps(targetRps);
-            SmartDashboard.putNumber("Test/ShooterPercent", testShooterPercent);
-            SmartDashboard.putNumber("Test/ShooterSetpointRPS", targetRps);
+            //testShooterPercent = MathUtil.clamp(testShooterPercent + TEST_SHOOTER_STEP, 0.0, 1.0);
+            //double targetRps = testShooterPercent * TEST_SHOOTER_MAX_SPEED_RPS;
+            //s_shooter.setTargetSpeedRps(targetRps);
+            //SmartDashboard.putNumber("Test/ShooterPercent", testShooterPercent);
+            //SmartDashboard.putNumber("Test/ShooterSetpointRPS", targetRps);
+            s_shooter.setDumbSpeed(0.5); // testing at 50% speed
         }));
         test.leftBumper().onTrue(s_shooter.runOnce(() -> {
-            testShooterPercent = MathUtil.clamp(testShooterPercent - TEST_SHOOTER_STEP, 0.0, 1.0);
-            double targetRps = testShooterPercent * TEST_SHOOTER_MAX_SPEED_RPS;
-            s_shooter.setTargetSpeedRps(targetRps);
-            SmartDashboard.putNumber("Test/ShooterPercent", testShooterPercent);
-            SmartDashboard.putNumber("Test/ShooterSetpointRPS", targetRps);
+            //testShooterPercent = MathUtil.clamp(testShooterPercent - TEST_SHOOTER_STEP, 0.0, 1.0);
+            //double targetRps = testShooterPercent * TEST_SHOOTER_MAX_SPEED_RPS;
+            //s_shooter.setTargetSpeedRps(targetRps);
+            //SmartDashboard.putNumber("Test/ShooterPercent", testShooterPercent);
+            //SmartDashboard.putNumber("Test/ShooterSetpointRPS", targetRps);
+            s_shooter.setDumbSpeed(0.0); // stop shooter
         }));
         // Test Ball Elevator
         test.povRight().onTrue(s_ballElevator.runOnce(() -> {

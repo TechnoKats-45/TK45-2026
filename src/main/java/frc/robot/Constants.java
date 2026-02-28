@@ -9,6 +9,7 @@ public class Constants
     public class CAN_BUS
     {
         public static final String RIO = "rio";
+        public static final String CANIVORE = "canivore";
     }
 
     public class CAN_ID
