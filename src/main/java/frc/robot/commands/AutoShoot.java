@@ -23,7 +23,7 @@ import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.FieldConstants;
 import frc.robot.subsystems.BallElevator;
 import frc.robot.subsystems.Drivetrain;
-import frc.robot.subsystems.Spindex;
+import frc.robot.subsystems.Spindexer;
 import frc.robot.subsystems.ShooterSystems.Hood;
 import frc.robot.subsystems.ShooterSystems.Shooter;
 import frc.robot.subsystems.ShooterSystems.ShotCalculator;
@@ -47,7 +47,7 @@ public class AutoShoot extends Command {
     private final Shooter shooter;
     private final Hood hood;
     private final Turret turret;
-    private final Spindex spindex;
+    private final Spindexer spindex;
     private final BallElevator ballElevator;
     private final ShotCalculator shotCalculator;
     private final BooleanSupplier autoEnabledSupplier;
@@ -67,7 +67,7 @@ public class AutoShoot extends Command {
             Shooter shooter,
             Hood hood,
             Turret turret,
-            Spindex spindex,
+            Spindexer spindex,
             BallElevator ballElevator,
             ShotCalculator shotCalculator,
             BooleanSupplier autoEnabledSupplier,

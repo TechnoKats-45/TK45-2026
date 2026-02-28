@@ -22,7 +22,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
 
-public class Spindex extends SubsystemBase 
+public class Spindexer extends SubsystemBase 
 {
     private static final int CONFIG_RETRIES = 5;
 
@@ -51,7 +51,7 @@ public class Spindex extends SubsystemBase
     private static final double MM_ACCEL_RPS2 = 5.0;
 
 
-    public Spindex() 
+    public Spindexer() 
     {
         spindexMotor = new TalonFX(Constants.CAN_ID.SPINDEXER, Constants.CAN_BUS.CANIVORE);
         configureMotor();

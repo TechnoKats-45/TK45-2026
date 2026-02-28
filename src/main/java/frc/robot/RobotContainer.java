@@ -55,7 +55,7 @@ public class RobotContainer
     public final Shooter s_shooter = new Shooter();
     public final Hood s_hood = new Hood();
     public final Turret s_turret = new Turret();
-    public final Spindex s_spindex = new Spindex();
+    public final Spindexer s_spindex = new Spindexer();
     public final BallElevator s_ballElevator = new BallElevator();
     public final ShotCalculator s_shotCalculator = new ShotCalculator(drivetrain);
     public final RightIntake r_Intake = new RightIntake();
@@ -194,5 +194,21 @@ public class RobotContainer
     public Command getAutonomousCommand() 
     {
         return autoChooser.getSelected(); 
+    }
+
+    public void printDiagnostics() 
+    {
+        s_spindex.printDiagnostics();
+        s_ballElevator.printDiagnostics();
+        
+        s_shooter.printDiagnostics();
+        s_turret.printDiagnostics();
+        s_hood.printDiagnostics();
+        //s_shotCalculator.printDiagnostics();
+
+        r_Intake.printDiagnostics();
+        l_Intake.printDiagnostics();
+
+        // Add more subsystem diagnostics as needed //TODO
     }
 }
