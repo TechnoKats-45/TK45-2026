@@ -98,7 +98,7 @@ public class LeftIntake extends SubsystemBase
 
     public boolean isAligned()
     {
-        return Math.abs(getAngle() - currentAngleSetPoint) <= Constants.Intake.AngleToleranceDegrees; //TODO TUNE
+        return Math.abs(getAngle() - currentAngleSetPoint) <= Constants.LeftIntake.AngleToleranceDegrees; //TODO TUNE
     }
     // Code for rollers
     public void setSpeed(double speedRps) 
