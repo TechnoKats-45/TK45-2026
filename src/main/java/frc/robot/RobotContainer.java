@@ -179,7 +179,7 @@ public class RobotContainer
             //s_shooter.setTargetSpeedRps(targetRps);
             //SmartDashboard.putNumber("Test/ShooterPercent", testShooterPercent);
             //SmartDashboard.putNumber("Test/ShooterSetpointRPS", targetRps);
-            s_shooter.setDumbSpeed(0.5); // testing at 50% speed
+            s_shooter.setDumbSpeed(1); // testing at 50% speed
         }));
         test.leftBumper().onTrue(s_shooter.runOnce(() -> {
             //testShooterPercent = MathUtil.clamp(testShooterPercent - TEST_SHOOTER_STEP, 0.0, 1.0);
@@ -191,7 +191,8 @@ public class RobotContainer
         }));
         // Test Ball Elevator
         test.povRight().onTrue(s_ballElevator.runOnce(() -> {
-            s_ballElevator.setSpeed(s_ballElevator.getSpeed()+(Constants.Ball_Elevator.MAX_ELEVATOR_SPEED_RPS/10));
+            s_ballElevator.setSpeed(40);
+            //s_ballElevator.getSpeed()+(Constants.Ball_Elevator.MAX_ELEVATOR_SPEED_RPS/10)
         }));
         test.povLeft().onTrue(s_ballElevator.runOnce(() -> {
             s_ballElevator.setSpeed(s_ballElevator.getSpeed()-(Constants.Ball_Elevator.MAX_ELEVATOR_SPEED_RPS/10));

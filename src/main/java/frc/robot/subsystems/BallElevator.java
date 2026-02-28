@@ -29,7 +29,7 @@ public class BallElevator extends SubsystemBase {
 
     private static final double SLOT0_KS = 0.0; // TODO - tune
     private static final double SLOT0_KV = 0.0; // TODO - tune
-    private static final double SLOT0_KP = 0.2; // TODO - tune
+    private static final double SLOT0_KP = 1000; // TODO - tune
     private static final double SLOT0_KI = 0.0; // TODO - tune
     private static final double SLOT0_KD = 0.0; // TODO - tune
 
