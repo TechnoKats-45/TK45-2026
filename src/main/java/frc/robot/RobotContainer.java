@@ -168,7 +168,7 @@ public class RobotContainer
         test.leftTrigger().whileFalse(l_Intake.runOnce(() -> l_Intake.stop()));
         //Spindex:
         test.povUp().onTrue(s_spindex.runOnce(() -> {
-            s_spindex.setSpeed(Constants.Spindexer.MAX_SPINDEX_SPEED_RPS/2);
+            s_spindex.setSpeed(Constants.Spindexer.MAX_SPINDEX_SPEED_RPS*75);
         }));
         test.povDown().onTrue(s_spindex.runOnce(() -> {
             s_spindex.setDumbSpeed(0);
@@ -182,7 +182,7 @@ public class RobotContainer
         }));
         // Test Ball Elevator
         test.povRight().onTrue(s_ballElevator.runOnce(() -> {
-            s_ballElevator.setSpeed(129/2);
+            s_ballElevator.setSpeed(129);
         }));
         test.povLeft().onTrue(s_ballElevator.runOnce(() -> {
             s_ballElevator.setSpeed(0);
