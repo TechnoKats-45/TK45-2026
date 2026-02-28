@@ -110,11 +110,21 @@ public class Constants
         public static final double MAX_ELEVATOR_SPEED_RPS = 40; // TODO - TUNE
     }
 
-    public class Intake
+    public class LeftIntake
     {
         public static final double INTAKE_SPEED = 0.5; // TODO - TUNE
         public static final double INTAKE_ROTATE_SPEED = 0.5; // TODO - TUNE
         public static final double AngleToleranceDegrees = 0; // TODO - TUNE
+        public static final double maxPivotAngle = 0.5 ;// TODO - tune
+        public static final double minPivotAngle = 0 ;// TODO -tune
+    }
+    public class RightIntake
+    {
+        public static final double INTAKE_SPEED = 0.5; // TODO - TUNE
+        public static final double INTAKE_ROTATE_SPEED = 0.5; // TODO - TUNE
+        public static final double AngleToleranceDegrees = 0; // TODO - TUNE
+        public static final double maxPivotAngle = 0.5 ;// TODO - tune
+        public static final double minPivotAngle = 0 ;// TODO -tune
     }
 
     public class Climber

@@ -58,6 +58,8 @@ public class RobotContainer
     public final Spindex s_spindex = new Spindex();
     public final BallElevator s_ballElevator = new BallElevator();
     public final ShotCalculator s_shotCalculator = new ShotCalculator(drivetrain);
+    public final RightIntake r_Intake = new RightIntake();
+    public final LeftIntake l_Intake = new LeftIntake();
 
     private final AutoShoot autoShootCommand = new AutoShoot(
             drivetrain,
@@ -150,6 +152,12 @@ public class RobotContainer
         //CLimber:
         test.a().onTrue(s_climber.runOnce(() -> s_climber.setHeightInches(Constants.Climber.MIN_HEIGHT_INCHES))); // a goes to minimum climber height
         test.y().onTrue(s_climber.runOnce(() -> s_climber.setHeightInches(Constants.Climber.MAX_HEIGHT_INCHES))); // y goes to max climber height
+        // Right Intake
+        test.b().onTrue(r_Intake.runOnce(() -> r_Intake.setAngle(Constants.RightIntake.maxPivotAngle)));
+        test.rightTrigger().whileTrue(r_Intake.runOnce(() -> r_Intake.runFeed(0.5))); // testing at 50% speed
+        // Left Intake
+        test.x().onTrue(r_Intake.runOnce(() -> l_Intake.setAngle(Constants.LeftIntake.maxPivotAngle)));
+        test.leftTrigger().whileTrue(l_Intake.runOnce(() -> l_Intake.runFeed(0.5))); // testing at 50% speed
         //Spindex:
         test.povUp().onTrue(s_spindex.runOnce(() -> {
             testSpindexPercent = MathUtil.clamp(testSpindexPercent + TEST_SPINDEX_STEP, -1.0, 1.0);
@@ -185,7 +193,6 @@ public class RobotContainer
         }));
 
         // TEST Hood
-        // TEST INTAKE LR
         // TEST TURRET
     }
 
