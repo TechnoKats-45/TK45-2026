@@ -192,11 +192,12 @@ public class RobotContainer
         // TEST TURRET
 
         // TEST 2 Controls:
-        test2.a().onTrue(s_hood.runOnce(() -> s_hood.zeroEncoder()));
-        test2.b().onTrue(s_turret.runOnce(() -> s_turret.zeroEncoder()));
-        test2.povUp().onTrue(l_Intake.runOnce(() -> l_Intake.zeroEncoder()));
-        test2.povDown().onTrue(l_Intake.runOnce(() -> l_Intake.zeroEncoder()));
-        test2.y().onTrue(s_climber.runOnce(() -> s_climber.zeroEncoder()));
+        test2.a().onTrue(s_hood.runOnce(() -> s_hood.zeroEncoder()).ignoringDisable(true));
+        test2.b().onTrue(s_turret.runOnce(() -> s_turret.zeroEncoder()).ignoringDisable(true));
+        test2.povUp().onTrue(l_Intake.runOnce(() -> l_Intake.zeroEncoder()).ignoringDisable(true));
+        test2.povDown().onTrue(r_Intake.runOnce(() -> r_Intake.zeroEncoder()).ignoringDisable(true));
+        test2.y().onTrue(s_climber.runOnce(() -> s_climber.zeroEncoder()).ignoringDisable(true));
+        test2.x().onTrue(s_turret.runOnce(() -> s_turret.zeroEncoder()).ignoringDisable(true));
     }
 
     public Command getAutonomousCommand() 
@@ -216,6 +217,7 @@ public class RobotContainer
 
         r_Intake.printDiagnostics();
         l_Intake.printDiagnostics();
+        s_climber.printDiagnostics();
 
         // Add more subsystem diagnostics as needed //TODO
     }

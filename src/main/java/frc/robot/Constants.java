@@ -115,7 +115,7 @@ public class Constants
     {
         public static final double INTAKE_SPEED = 0.5; // TODO - TUNE
         public static final double INTAKE_ROTATE_SPEED = 0.5; // TODO - TUNE
-        public static final double ANGLE_TOLERANCE_DEGREES = 0; // TODO - TUNE
+        public static final double ANGLE_TOLERANCE_DEGREES = 1; // TODO - TUNE
         public static final double MAX_PIVOT_ANGLE = 0.5 ;// TODO - tune
         public static final double MIN_PIVOT_ANGLE = 0 ;// TODO -tune
         public static final double SPEED_TOLERANCE_RPS = 0.5; // TODO - TUNE
@@ -124,7 +124,7 @@ public class Constants
     {
         public static final double INTAKE_SPEED = 0.5; // TODO - TUNE
         public static final double INTAKE_ROTATE_SPEED = 0.5; // TODO - TUNE
-        public static final double ANGLE_TOLERANCE_DEGREES = 0; // TODO - TUNE
+        public static final double ANGLE_TOLERANCE_DEGREES = 1; // TODO - TUNE
         public static final double MAX_PIVOT_ANGLE = 0.5 ;// TODO - tune
         public static final double MIN_PIVOT_ANGLE = 0 ;// TODO -tune
         public static final double SPEED_TOLERANCE_RPS = 0.5; // TODO - TUNE
