@@ -11,6 +11,7 @@ import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.FieldConstants;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 import frc.robot.subsystems.Drivetrain;
 
@@ -100,5 +101,13 @@ public class ShotCalculator extends SubsystemBase {
 
     public double getTargetSpeedRps() {
         return targetSpeedRps;
+    }
+    public void printDiagnostics() {
+        SmartDashboard.putNumber("Shot Calculator Target Distance", targetDistance);
+        SmartDashboard.putNumber("Shot Calculator Target Speed RPS", targetSpeedRps);
+        SmartDashboard.putNumber("Shot Calculator Effective Target X", currentEffectiveTargetPose.getX());
+        SmartDashboard.putNumber("Shot Calculator Effective Target Y", currentEffectiveTargetPose.getY());
+        SmartDashboard.putNumber("Shot Calculator Effective Target Z", currentEffectiveTargetPose.getZ());
+        SmartDashboard.putNumber("Shot Calculator Effective Yaw", currentEffectiveYaw);
     }
 }
