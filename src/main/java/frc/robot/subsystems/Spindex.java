@@ -2,6 +2,9 @@ package frc.robot.subsystems;
 
 import static edu.wpi.first.units.Units.Volts;
 
+import static edu.wpi.first.units.Units.RotationsPerSecond;
+import static edu.wpi.first.units.Units.RotationsPerSecondPerSecond;
+import static edu.wpi.first.units.Units.Volts;
 import com.ctre.phoenix6.StatusCode;
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
 import com.ctre.phoenix6.configs.FeedbackConfigs;
@@ -23,8 +26,8 @@ public class Spindex extends SubsystemBase
 {
     private static final int CONFIG_RETRIES = 5;
 
-    private static final double STATOR_CURRENT_LIMIT_AMPS = 40.0;
-    private static final double SUPPLY_CURRENT_LIMIT_AMPS = 30.0;
+    private static final double STATOR_CURRENT_LIMIT_AMPS = 120;
+    private static final double SUPPLY_CURRENT_LIMIT_AMPS = 60.0;
     private static final double SENSOR_TO_MECHANISM_RATIO = 1.0; 
 
     private static final double SLOT0_KS = 0.0; // TODO - tune
@@ -44,6 +47,9 @@ public class Spindex extends SubsystemBase
     private final VelocityTorqueCurrentFOC velocityRequest = new VelocityTorqueCurrentFOC(0);
     private double currentSpeedSetpointRps = 0.0;
     private final MotionMagicVelocityVoltage motionMagicVelocityRequest = new MotionMagicVelocityVoltage(0);
+    private static final double MM_CRUISE_RPS = 5.0;
+    private static final double MM_ACCEL_RPS2 = 5.0;
+
 
     public Spindex() 
     {
@@ -107,6 +113,9 @@ public class Spindex extends SubsystemBase
         spindexConfigs.Voltage
                 .withPeakForwardVoltage(Volts.of(PEAK_FORWARD_VOLTS))
                 .withPeakReverseVoltage(Volts.of(PEAK_REVERSE_VOLTS));
+                MotionMagicConfigs mm = spindexConfigs.MotionMagic;
+        mm.withMotionMagicCruiseVelocity(RotationsPerSecond.of(MM_CRUISE_RPS))
+                .withMotionMagicAcceleration(RotationsPerSecondPerSecond.of(MM_ACCEL_RPS2));
 
         StatusCode status = StatusCode.StatusCodeNotInitialized;
         for (int i = 0; i < CONFIG_RETRIES; ++i) {

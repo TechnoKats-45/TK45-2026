@@ -108,7 +108,7 @@ public class Constants
     public class Ball_Elevator
     {
         public static final double ELEVATOR_SPEED = 0.5; // TODO - TUNE
-        public static final double MAX_ELEVATOR_SPEED_RPS = 40; // TODO - TUNE
+        public static final double MAX_ELEVATOR_SPEED_RPS = 129; // TODO - TUNE
     }
 
     public class LeftIntake
@@ -139,6 +139,7 @@ public class Constants
 
     public class Spindexer
     {
+        public static final double MAX_SPINDEX_SPEED_RPS = 101.0; // TODO - TUNE
         public static final double SPINDEXER_SPEED = 0.5; // TODO - TUNE
     }
 }

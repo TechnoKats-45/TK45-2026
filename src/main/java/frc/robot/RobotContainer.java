@@ -61,6 +61,7 @@ public class RobotContainer
     public final RightIntake r_Intake = new RightIntake();
     public final LeftIntake l_Intake = new LeftIntake();
 
+    /*
     private final AutoShoot autoShootCommand = new AutoShoot(
             drivetrain,
             s_shooter,
@@ -84,6 +85,7 @@ public class RobotContainer
                 return operator.getLeftTriggerAxis() <= 0.5;
             }
     );
+    */
     
     private final SendableChooser<Command> autoChooser; 
 
@@ -129,6 +131,8 @@ public class RobotContainer
             drivetrain.applyRequest(() -> idle).ignoringDisable(true)
         );
 
+        
+
         driver.a().whileTrue(drivetrain.applyRequest(() ->
             point.withModuleDirection(new Rotation2d(-driver.getLeftY(), -driver.getLeftX()))
         ));
@@ -163,14 +167,10 @@ public class RobotContainer
         test.leftTrigger().whileFalse(l_Intake.runOnce(() -> l_Intake.stop()));
         //Spindex:
         test.povUp().onTrue(s_spindex.runOnce(() -> {
-            testSpindexPercent = MathUtil.clamp(testSpindexPercent + TEST_SPINDEX_STEP, -1.0, 1.0);
-            s_spindex.setDumbSpeed(testSpindexPercent);
-            SmartDashboard.putNumber("Test/SpindexPercent", testSpindexPercent);
+            s_spindex.setSpeed(Constants.Spindexer.MAX_SPINDEX_SPEED_RPS/2);
         }));
         test.povDown().onTrue(s_spindex.runOnce(() -> {
-            testSpindexPercent = MathUtil.clamp(testSpindexPercent - TEST_SPINDEX_STEP, -1.0, 1.0);
-            s_spindex.setDumbSpeed(testSpindexPercent);
-            SmartDashboard.putNumber("Test/SpindexPercent", testSpindexPercent);
+            s_spindex.setDumbSpeed(0);
         }));
         //Shooter
         test.rightBumper().onTrue(s_shooter.runOnce(() -> {
@@ -191,11 +191,10 @@ public class RobotContainer
         }));
         // Test Ball Elevator
         test.povRight().onTrue(s_ballElevator.runOnce(() -> {
-            s_ballElevator.setSpeed(40);
-            //s_ballElevator.getSpeed()+(Constants.Ball_Elevator.MAX_ELEVATOR_SPEED_RPS/10)
+            s_ballElevator.setSpeed(129/2);
         }));
         test.povLeft().onTrue(s_ballElevator.runOnce(() -> {
-            s_ballElevator.setSpeed(s_ballElevator.getSpeed()-(Constants.Ball_Elevator.MAX_ELEVATOR_SPEED_RPS/10));
+            s_ballElevator.setSpeed(0);
         }));
 
         // TEST Hood

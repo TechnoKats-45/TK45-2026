@@ -1,18 +1,19 @@
 package frc.robot.subsystems;
 
+import static edu.wpi.first.units.Units.RotationsPerSecond;
+import static edu.wpi.first.units.Units.RotationsPerSecondPerSecond;
 import static edu.wpi.first.units.Units.Volts;
 
 import com.ctre.phoenix6.StatusCode;
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
 import com.ctre.phoenix6.configs.FeedbackConfigs;
+import com.ctre.phoenix6.configs.MotionMagicConfigs;
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
-import com.ctre.phoenix6.controls.MotionMagicVelocityVoltage;
 import com.ctre.phoenix6.controls.VelocityTorqueCurrentFOC;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.FeedbackSensorSourceValue;
 import com.ctre.phoenix6.signals.InvertedValue;
-import com.ctre.phoenix6.configs.MotionMagicConfigs;
 
 
 import edu.wpi.first.math.MathUtil;
@@ -23,13 +24,13 @@ import frc.robot.Constants;
 public class BallElevator extends SubsystemBase {
     private static final int CONFIG_RETRIES = 5;
 
-    private static final double STATOR_CURRENT_LIMIT_AMPS = 40.0;
-    private static final double SUPPLY_CURRENT_LIMIT_AMPS = 30.0;
+    private static final double STATOR_CURRENT_LIMIT_AMPS = 120.0;
+    private static final double SUPPLY_CURRENT_LIMIT_AMPS = 60.0;
     private static final double SENSOR_TO_MECHANISM_RATIO = 1.0; // TODO: check gearing, I believe it is 1:1 though
 
     private static final double SLOT0_KS = 0.0; // TODO - tune
     private static final double SLOT0_KV = 0.0; // TODO - tune
-    private static final double SLOT0_KP = 1000; // TODO - tune
+    private static final double SLOT0_KP = 1; // TODO - tune
     private static final double SLOT0_KI = 0.0; // TODO - tune
     private static final double SLOT0_KD = 0.0; // TODO - tune
 
@@ -39,9 +40,8 @@ public class BallElevator extends SubsystemBase {
     private static final double SPEED_TOLERANCE_RPS = 0.5;
     private static final double MAX_ELEVATOR_SPEED_RPS = Constants.Ball_Elevator.MAX_ELEVATOR_SPEED_RPS; // TODO - tune
     private static final InvertedValue MOTOR_INVERTED = InvertedValue.CounterClockwise_Positive;
-
-    private final MotionMagicVelocityVoltage motionMagicVelocityRequest = new MotionMagicVelocityVoltage(0);
-
+    private static final double MM_CRUISE_RPS = 5.0;
+    private static final double MM_ACCEL_RPS2 = 5.0;
 
     private final TalonFX ballElevatorMotor;
     private final VelocityTorqueCurrentFOC velocityRequest = new VelocityTorqueCurrentFOC(0);
@@ -54,7 +54,7 @@ public class BallElevator extends SubsystemBase {
 
     public void setSpeed(double speedRps) {
         currentSpeedSetpointRps = speedRps;
-        ballElevatorMotor.setControl(motionMagicVelocityRequest.withVelocity(currentSpeedSetpointRps));
+        ballElevatorMotor.setControl(velocityRequest.withVelocity(currentSpeedSetpointRps));
         SmartDashboard.putNumber("Ball Elevator Speed Setpoint RPS", currentSpeedSetpointRps);
     }
 
@@ -100,6 +100,10 @@ public class BallElevator extends SubsystemBase {
                         .withKP(SLOT0_KP)
                         .withKI(SLOT0_KI)
                         .withKD(SLOT0_KD));
+        MotionMagicConfigs mm = ballElevatorConfigs.MotionMagic;
+        mm.withMotionMagicCruiseVelocity(RotationsPerSecond.of(MM_CRUISE_RPS))
+                .withMotionMagicAcceleration(RotationsPerSecondPerSecond.of(MM_ACCEL_RPS2));
+        // .withMotionMagicJerk(RotationsPerSecondPerSecond.per(Second).of(10));
 
         ballElevatorConfigs.MotorOutput.Inverted = MOTOR_INVERTED;
         ballElevatorConfigs.Voltage
