@@ -160,36 +160,21 @@ public class RobotContainer
         test.b().onTrue(r_Intake.runOnce(() -> r_Intake.setAngle(Constants.RightIntake.maxPivotAngle)));
         test.rightTrigger().whileTrue(r_Intake.runOnce(() -> r_Intake.runFeed(0.5)));
         test.rightTrigger().whileFalse(r_Intake.runOnce(() -> r_Intake.stop())); 
-         // testing at 50% speed
-        // Left Intake
         test.x().onTrue(r_Intake.runOnce(() -> l_Intake.setAngle(Constants.LeftIntake.maxPivotAngle)));
         test.leftTrigger().whileTrue(l_Intake.runOnce(() -> l_Intake.runFeed(0.5))); // testing at 50% speed
         test.leftTrigger().whileFalse(l_Intake.runOnce(() -> l_Intake.stop()));
-        //Spindex:
         test.povUp().onTrue(s_spindex.runOnce(() -> {
             s_spindex.setSpeed(Constants.Spindexer.MAX_SPINDEX_SPEED_RPS/2);
         }));
         test.povDown().onTrue(s_spindex.runOnce(() -> {
             s_spindex.setDumbSpeed(0);
         }));
-        //Shooter
         test.rightBumper().onTrue(s_shooter.runOnce(() -> {
-            //testShooterPercent = MathUtil.clamp(testShooterPercent + TEST_SHOOTER_STEP, 0.0, 1.0);
-            //double targetRps = testShooterPercent * TEST_SHOOTER_MAX_SPEED_RPS;
-            //s_shooter.setTargetSpeedRps(targetRps);
-            //SmartDashboard.putNumber("Test/ShooterPercent", testShooterPercent);
-            //SmartDashboard.putNumber("Test/ShooterSetpointRPS", targetRps);
-            s_shooter.setDumbSpeed(1); // testing at 50% speed
+            s_shooter.setDumbSpeed(1);
         }));
         test.leftBumper().onTrue(s_shooter.runOnce(() -> {
-            //testShooterPercent = MathUtil.clamp(testShooterPercent - TEST_SHOOTER_STEP, 0.0, 1.0);
-            //double targetRps = testShooterPercent * TEST_SHOOTER_MAX_SPEED_RPS;
-            //s_shooter.setTargetSpeedRps(targetRps);
-            //SmartDashboard.putNumber("Test/ShooterPercent", testShooterPercent);
-            //SmartDashboard.putNumber("Test/ShooterSetpointRPS", targetRps);
-            s_shooter.setDumbSpeed(0.0); // stop shooter
+            s_shooter.setDumbSpeed(0.0);
         }));
-        // Test Ball Elevator
         test.povRight().onTrue(s_ballElevator.runOnce(() -> {
             s_ballElevator.setSpeed(129/2);
         }));
