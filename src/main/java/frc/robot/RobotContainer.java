@@ -43,6 +43,7 @@ public class RobotContainer
     private final CommandXboxController driver = new CommandXboxController(0);      // Drive controller
     private final CommandXboxController operator = new CommandXboxController(1);    // Operator controller
     private final CommandXboxController test = new CommandXboxController(2);        // Test controller
+    private final CommandXboxController test2 = new CommandXboxController(3);       // Second test controller for testing subsystems with more complex controls (e.g. shooter)
 
     private static final double TEST_SPINDEX_STEP = 0.1;
     private static final double TEST_SHOOTER_STEP = 0.1;
@@ -189,6 +190,13 @@ public class RobotContainer
 
         // TEST Hood
         // TEST TURRET
+
+        // TEST 2 Controls:
+        test2.a().onTrue(s_hood.runOnce(() -> s_hood.zeroEncoder()));
+        test2.b().onTrue(s_turret.runOnce(() -> s_turret.zeroEncoder()));
+        test2.povUp().onTrue(l_Intake.runOnce(() -> l_Intake.zeroEncoder()));
+        test2.povDown().onTrue(l_Intake.runOnce(() -> l_Intake.zeroEncoder()));
+        test2.y().onTrue(s_climber.runOnce(() -> s_climber.zeroEncoder()));
     }
 
     public Command getAutonomousCommand() 
