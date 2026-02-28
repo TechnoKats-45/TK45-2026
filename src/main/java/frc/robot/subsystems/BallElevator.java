@@ -122,4 +122,9 @@ public class BallElevator extends SubsystemBase {
             System.out.println("Could not apply configs for ball elevator, error code: " + status);
         }
     }
+    public void printDiagnostics() {
+        SmartDashboard.putNumber("Ball Elevator Current Speed RPS", getSpeed());
+        SmartDashboard.putNumber("Ball Elevator Speed Setpoint RPS", currentSpeedSetpointRps);
+        SmartDashboard.putBoolean("Ball Elevator Is At Speed", isAtSpeed());
+    }
 }

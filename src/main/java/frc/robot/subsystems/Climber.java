@@ -113,4 +113,9 @@ public class Climber extends SubsystemBase
             System.out.println("Could not apply climber configs, error code: " + status);
         }
     }
+    public void printDiagnostics() {
+        SmartDashboard.putNumber("Climber Current Height Inches", getHeightInches());
+        SmartDashboard.putNumber("Climber Height Setpoint Inches", currentHeightSetPointInches);
+        SmartDashboard.putBoolean("Climber Is Aligned", isAligned());
+    }
 }

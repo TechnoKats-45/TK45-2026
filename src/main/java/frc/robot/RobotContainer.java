@@ -157,24 +157,29 @@ public class RobotContainer
         test.a().onTrue(s_climber.runOnce(() -> s_climber.setHeightInches(Constants.Climber.MIN_HEIGHT_INCHES))); // a goes to minimum climber height
         test.y().onTrue(s_climber.runOnce(() -> s_climber.setHeightInches(Constants.Climber.MAX_HEIGHT_INCHES))); // y goes to max climber height
         // Right Intake
-        test.b().onTrue(r_Intake.runOnce(() -> r_Intake.setAngle(Constants.RightIntake.maxPivotAngle)));
+        test.b().onTrue(r_Intake.runOnce(() -> r_Intake.setAngle(Constants.RightIntake.MAX_PIVOT_ANGLE)));
         test.rightTrigger().whileTrue(r_Intake.runOnce(() -> r_Intake.runFeed(0.5)));
         test.rightTrigger().whileFalse(r_Intake.runOnce(() -> r_Intake.stop())); 
-        test.x().onTrue(r_Intake.runOnce(() -> l_Intake.setAngle(Constants.LeftIntake.maxPivotAngle)));
+         // testing at 50% speed
+        // Left Intake
+        test.x().onTrue(r_Intake.runOnce(() -> l_Intake.setAngle(Constants.LeftIntake.MAX_PIVOT_ANGLE)));
         test.leftTrigger().whileTrue(l_Intake.runOnce(() -> l_Intake.runFeed(0.5))); // testing at 50% speed
         test.leftTrigger().whileFalse(l_Intake.runOnce(() -> l_Intake.stop()));
+        //Spindex:
         test.povUp().onTrue(s_spindex.runOnce(() -> {
             s_spindex.setSpeed(Constants.Spindexer.MAX_SPINDEX_SPEED_RPS/2);
         }));
         test.povDown().onTrue(s_spindex.runOnce(() -> {
             s_spindex.setDumbSpeed(0);
         }));
+        //Shooter
         test.rightBumper().onTrue(s_shooter.runOnce(() -> {
-            s_shooter.setDumbSpeed(1);
+            s_shooter.setDumbSpeed(1); // testing at 50% speed
         }));
         test.leftBumper().onTrue(s_shooter.runOnce(() -> {
-            s_shooter.setDumbSpeed(0.0);
+            s_shooter.setDumbSpeed(0.0); // stop shooter
         }));
+        // Test Ball Elevator
         test.povRight().onTrue(s_ballElevator.runOnce(() -> {
             s_ballElevator.setSpeed(129/2);
         }));
@@ -189,11 +194,5 @@ public class RobotContainer
     public Command getAutonomousCommand() 
     {
         return autoChooser.getSelected(); 
-    }
-
-    public void printDiagnostics()
-    {
-        s_spindex.printDiagnostics();
-        // ADD OTHER SUBSYSTEMS // TODO
     }
 }

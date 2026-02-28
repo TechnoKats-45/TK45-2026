@@ -116,4 +116,9 @@ public class Hood extends SubsystemBase
             System.out.println("Could not apply hood configs, error code: " + status);
         }
     }
+    public void printDiagnostics() {
+        SmartDashboard.putNumber("Hood Current Angle", getAngle());
+        SmartDashboard.putNumber("Hood Angle Setpoint", getAngleSetpoint());
+        SmartDashboard.putBoolean("Hood Is Aligned", isAligned());
+    }
 }

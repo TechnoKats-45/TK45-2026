@@ -98,7 +98,7 @@ public class RightIntake extends SubsystemBase
 
     public boolean isAligned()
     {
-        return Math.abs(getAngle() - currentAngleSetPoint) <= Constants.RightIntake.AngleToleranceDegrees; //TODO TUNE
+        return Math.abs(getAngle() - currentAngleSetPoint) <= Constants.RightIntake.ANGLE_TOLERANCE_DEGREES; //TODO TUNE
     }
     // Code for rollers
     public void setSpeed(double speedRps) 
@@ -204,6 +204,14 @@ public class RightIntake extends SubsystemBase
         if (!status.isOK()) {
             System.out.println("Could not apply RIGHT spin intake configs, error code: " + status);
         }
+    }
+    public void printDiagnostics() {
+        SmartDashboard.putNumber("RIGHT Intake Current Angle", getAngle());
+        SmartDashboard.putNumber("RIGHT Intake Angle Setpoint", currentAngleSetPoint);
+        SmartDashboard.putBoolean("RIGHT Intake Is Aligned", isAligned());
+        SmartDashboard.putNumber("RIGHT Intake Current Speed RPS", getSpeed());
+        SmartDashboard.putNumber("RIGHT Intake Speed Setpoint RPS", currentSpeedSetpointRps);
+        SmartDashboard.putBoolean("RIGHT Intake Is At Speed", isAtSpeed(Constants.RightIntake.SPEED_TOLERANCE_RPS));
     }
 }
 

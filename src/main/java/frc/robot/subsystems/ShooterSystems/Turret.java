@@ -115,4 +115,9 @@ public class Turret extends SubsystemBase
             System.out.println("Could not apply turret configs, error code: " + status);
         }
     }
+    public void printDiagnostics() {
+        SmartDashboard.putNumber("Turret Current Angle", getAngle());
+        SmartDashboard.putNumber("Turret Angle Setpoint", getAngleSetpoint());
+        SmartDashboard.putBoolean("Turret Is Aligned", isAligned());
+    }
 }
