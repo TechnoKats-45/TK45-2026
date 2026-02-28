@@ -42,7 +42,7 @@ public class Climber extends SubsystemBase
 
     public Climber()
     {
-        climber_motor = new TalonFX(Constants.CAN_ID.CLIMBER, Constants.CAN_BUS.CANIVORE);
+        climber_motor = new TalonFX(Constants.CAN_ID.CLIMBER, Constants.CAN_BUS.RIO);
         configureClimberMotor();
     }
 

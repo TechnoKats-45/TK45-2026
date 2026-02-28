@@ -43,7 +43,7 @@ public class Hood extends SubsystemBase
 
     public Hood()
     {
-        hood_rotation_motor = new TalonFX(Constants.CAN_ID.HOOD_ROTATE, Constants.CAN_BUS.CANIVORE);
+        hood_rotation_motor = new TalonFX(Constants.CAN_ID.HOOD_ROTATE, Constants.CAN_BUS.RIO);
         configureHoodMotor();
     }
 
