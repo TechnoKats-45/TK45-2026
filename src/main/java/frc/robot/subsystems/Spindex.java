@@ -47,7 +47,7 @@ public class Spindex extends SubsystemBase
 
     public Spindex() 
     {
-        spindexMotor = new TalonFX(Constants.CAN_ID.SPINDEXER, Constants.CAN_BUS.CANIVORE);
+        spindexMotor = new TalonFX(Constants.CAN_ID.SPINDEXER, Constants.CAN_BUS.RIO);
         configureMotor();
     }
 
