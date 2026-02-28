@@ -190,4 +190,10 @@ public class RobotContainer
     {
         return autoChooser.getSelected(); 
     }
+
+    public void printDiagnostics()
+    {
+        s_spindex.printDiagnostics();
+        // ADD OTHER SUBSYSTEMS // TODO
+    }
 }

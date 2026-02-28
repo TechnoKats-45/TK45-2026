@@ -129,4 +129,9 @@ public class Spindex extends SubsystemBase
             System.out.println("Could not apply configs for spindex, error code: " + status);
         }
     }
+    public void printDiagnostics()
+    {
+        SmartDashboard.putNumber("Spindexer Velocity", getSpeed());        // Print velocity
+        SmartDashboard.putNumber("Spindexer Current", spindexMotor.getSupplyCurrent().getValueAsDouble());// Print Current (Amps)
+    }
 }
