@@ -92,9 +92,9 @@ public class Constants
 
         public static enum TurretPosition 
         {
-            LEFT(-90),          // TODO - TUNE
-            CENTER(0),    // TODO - TUNE
-            RIGHT(90);    // TODO - TUNE
+            LEFT(80.419921875),
+            CENTER(0),   
+            RIGHT(-86.484375);    
 
             public final double value;
 

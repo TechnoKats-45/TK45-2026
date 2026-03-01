@@ -40,8 +40,8 @@ public class RightIntake extends SubsystemBase
     private static final double SLOT0_KD = 1.0;
     
     //Roller Vars
-    private static final double STATOR_CURRENT_LIMIT_AMPS_ROLLER = 10.0;   // TODO - Adjust as necessary to prevent damage to the motor and mechanism - set low rn for testing purposes
-    private static final double SUPPLY_CURRENT_LIMIT_AMPS_ROLLER = 10.0;   // TODO - Adjust as necessary to prevent damage to the motor and mechanism - set low rn for testing purposes
+    private static final double STATOR_CURRENT_LIMIT_AMPS_ROLLER = 120.0;   // TODO - Adjust as necessary to prevent damage to the motor and mechanism - set low rn for testing purposes
+    private static final double SUPPLY_CURRENT_LIMIT_AMPS_ROLLER = 60.0;   // TODO - Adjust as necessary to prevent damage to the motor and mechanism - set low rn for testing purposes
     private static final double MM_CRUISE_RPS_ROLLER = 5.0; // TODO tune
     private static final double MM_ACCEL_RPS2_ROLLER = 5.0; // TODO Tune
     private static final double SENSOR_TO_MECHANISM_RATIO_ROLLER = 1.0; // TODO tune

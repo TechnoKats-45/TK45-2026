@@ -24,8 +24,7 @@ public class LeftIntake extends SubsystemBase
     private static final int CONFIG_RETRIES = 5;
     // Pivot Vars
     // Change to add _PIVOT
-    private static final double STATOR_CURRENT_LIMIT_AMPS_PIVOT = 10.0;   // TODO - Adjust as necessary to prevent damage to the motor and mechanism - set low rn for testing purposes
-    private static final double SUPPLY_CURRENT_LIMIT_AMPS_PIVOT = 10.0;   // TODO - Adjust as necessary to prevent damage to the motor and mechanism - set low rn for testing purposes
+   // TODO - Adjust as necessary to prevent damage to the motor and mechanism - set low rn for testing purposes
     private static final double MM_CRUISE_RPS_PIVOT = 0.5; // TODO tune
     private static final double MM_ACCEL_RPS2_PIVOT = 0.5; // TODO TUNE
     private static final double SENSOR_TO_MECHANISM_RATIO_PIVOT = 70.0;
@@ -40,8 +39,10 @@ public class LeftIntake extends SubsystemBase
     private static final double SLOT0_KD = 1.0;
     
     //Roller Vars
-    private static final double STATOR_CURRENT_LIMIT_AMPS_ROLLER = 10.0;   // TODO - Adjust as necessary to prevent damage to the motor and mechanism - set low rn for testing purposes
-    private static final double SUPPLY_CURRENT_LIMIT_AMPS_ROLLER = 10.0;   // TODO - Adjust as necessary to prevent damage to the motor and mechanism - set low rn for testing purposes
+    private static final double ROLLER_STATOR_CURRENT_LIMIT_AMPS = 120.0;   // TODO - Adjust as necessary to prevent damage to the motor and mechanism - set low rn for testing purposes
+    private static final double ROLLER_SUPPLY_CURRENT_LIMIT_AMPS = 60.0;   // TODO - Adjust as necessary to prevent damage to the motor and mechanism - set low rn for testing purposes
+    private static final double PIVOT_STATOR_CURRENT_LIMIT_AMPS = 10.0;   // TODO - Adjust as necessary to prevent damage to the motor and mechanism - set low rn for testing purposes
+    private static final double PIVOT_SUPPLY_CURRENT_LIMIT_AMPS = 10.0;   // TODO - Adjust as necessary to prevent damage to the motor and mechanism - set low rn for testing purposes
     private static final double MM_CRUISE_RPS_ROLLER = 5.0; // TODO tune
     private static final double MM_ACCEL_RPS2_ROLLER = 5.0; // TODO Tune
     private static final double SENSOR_TO_MECHANISM_RATIO_ROLLER = 1.0; // TODO tune
@@ -138,8 +139,8 @@ public class LeftIntake extends SubsystemBase
     {
         TalonFXConfiguration IntakePivotConfigs = new TalonFXConfiguration()
                 .withCurrentLimits(new CurrentLimitsConfigs()
-                        .withStatorCurrentLimit(STATOR_CURRENT_LIMIT_AMPS_PIVOT)
-                        .withSupplyCurrentLimit(SUPPLY_CURRENT_LIMIT_AMPS_PIVOT)
+                        .withStatorCurrentLimit(PIVOT_STATOR_CURRENT_LIMIT_AMPS)
+                        .withSupplyCurrentLimit(PIVOT_SUPPLY_CURRENT_LIMIT_AMPS)
                         .withStatorCurrentLimitEnable(true))
                 .withFeedback(new FeedbackConfigs()
                         .withFeedbackSensorSource(FeedbackSensorSourceValue.RotorSensor)
@@ -174,8 +175,8 @@ public class LeftIntake extends SubsystemBase
     {
         TalonFXConfiguration IntakeSpinConfigs = new TalonFXConfiguration()
                 .withCurrentLimits(new CurrentLimitsConfigs()
-                        .withStatorCurrentLimit(STATOR_CURRENT_LIMIT_AMPS_ROLLER)
-                        .withSupplyCurrentLimit(SUPPLY_CURRENT_LIMIT_AMPS_ROLLER)
+                        .withStatorCurrentLimit(ROLLER_STATOR_CURRENT_LIMIT_AMPS)
+                        .withSupplyCurrentLimit(ROLLER_SUPPLY_CURRENT_LIMIT_AMPS)
                         .withStatorCurrentLimitEnable(true))
                 .withFeedback(new FeedbackConfigs()
                         .withFeedbackSensorSource(FeedbackSensorSourceValue.RotorSensor)
