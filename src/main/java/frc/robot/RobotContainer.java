@@ -63,8 +63,8 @@ public class RobotContainer
     public final ShotCalculator s_shotCalculator = new ShotCalculator(drivetrain);
     public final RightIntake r_Intake = new RightIntake();
     public final LeftIntake l_Intake = new LeftIntake();
+    public final Vision s_vision = new Vision(drivetrain);
 
-    /*
     private final AutoShoot autoShootCommand = new AutoShoot(
             drivetrain,
             s_shooter,
@@ -88,7 +88,6 @@ public class RobotContainer
                 return operator.getLeftTriggerAxis() <= 0.5;
             }
     );
-    */
     
     private final SendableChooser<Command> autoChooser; 
 
@@ -99,6 +98,7 @@ public class RobotContainer
         SmartDashboard.putNumber("Test/ShooterPercent", testShooterPercent);
         SmartDashboard.putNumber("Test/ShooterSetpointRPS", 0.0);
         configureBindings();
+        configureDashboardZeroToggles();
 
         if (drivetrain.isAutoBuilderConfigured()) {
             autoChooser = AutoBuilder.buildAutoChooser();
@@ -108,6 +108,37 @@ public class RobotContainer
         }
         
         SmartDashboard.putData("Auto Mode", autoChooser); 
+    }
+
+    private void configureDashboardZeroToggles() {
+        SmartDashboard.putBoolean("Zero/Hood Encoder", false);
+        SmartDashboard.putBoolean("Zero/Turret Encoder", false);
+        SmartDashboard.putBoolean("Zero/Left Intake Pivot Encoder", false);
+        SmartDashboard.putBoolean("Zero/Right Intake Pivot Encoder", false);
+        SmartDashboard.putBoolean("Zero/Climber Encoder", false);
+    }
+
+    public void processDashboardZeroRequests() {
+        if (SmartDashboard.getBoolean("Zero/Hood Encoder", false)) {
+            s_hood.zeroEncoder();
+            SmartDashboard.putBoolean("Zero/Hood Encoder", false);
+        }
+        if (SmartDashboard.getBoolean("Zero/Turret Encoder", false)) {
+            s_turret.zeroEncoder();
+            SmartDashboard.putBoolean("Zero/Turret Encoder", false);
+        }
+        if (SmartDashboard.getBoolean("Zero/Left Intake Pivot Encoder", false)) {
+            l_Intake.zeroEncoder();
+            SmartDashboard.putBoolean("Zero/Left Intake Pivot Encoder", false);
+        }
+        if (SmartDashboard.getBoolean("Zero/Right Intake Pivot Encoder", false)) {
+            r_Intake.zeroEncoder();
+            SmartDashboard.putBoolean("Zero/Right Intake Pivot Encoder", false);
+        }
+        if (SmartDashboard.getBoolean("Zero/Climber Encoder", false)) {
+            s_climber.zeroEncoder();
+            SmartDashboard.putBoolean("Zero/Climber Encoder", false);
+        }
     }
 
     private void configureBindings() 
@@ -125,7 +156,7 @@ public class RobotContainer
             )
         );
 
-        //s_shooter.setDefaultCommand(autoShootCommand.onlyIf(() -> !RobotState.isTest()));
+        s_shooter.setDefaultCommand(autoShootCommand.onlyIf(() -> !RobotState.isTest()));
 
         // Idle while the robot is disabled. This ensures the configured
         // neutral mode is applied to the drive motors while disabled.

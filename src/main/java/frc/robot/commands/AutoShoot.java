@@ -20,6 +20,7 @@ import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
+import frc.robot.Constants;
 import frc.robot.FieldConstants;
 import frc.robot.subsystems.BallElevator;
 import frc.robot.subsystems.Drivetrain;
@@ -123,7 +124,14 @@ public class AutoShoot extends Command {
         double fieldYawRad = Math.atan2(dy, dx);
         double robotRelativeYawDeg = Math.toDegrees(MathUtil.angleModulus(fieldYawRad - robotPose.getRotation().getRadians()));
 
-        turret.setAngle(robotRelativeYawDeg);
+        double turretMinDeg = Math.min(
+                Constants.Turret.TurretPosition.LEFT.value,
+                Constants.Turret.TurretPosition.RIGHT.value);
+        double turretMaxDeg = Math.max(
+                Constants.Turret.TurretPosition.LEFT.value,
+                Constants.Turret.TurretPosition.RIGHT.value);
+        double clampedTurretDeg = MathUtil.clamp(robotRelativeYawDeg, turretMinDeg, turretMaxDeg);
+        turret.setAngle(clampedTurretDeg);
         InterceptSolution intercept = shotCalculator.getInterceptSolution();
         if (intercept == null) {
             intercept = new InterceptSolution(target, 0.0, 0.0, 0.0, 0.0);
@@ -131,7 +139,15 @@ public class AutoShoot extends Command {
         TrajectoryData trajectoryData = buildShotTrajectory(shooterPose, effectiveTarget, intercept);
         publishRawTrajectory(trajectoryData);
 
-        hood.setAngle(Math.toDegrees(intercept.launchPitchRad()));
+        double desiredHoodDeg = Math.toDegrees(intercept.launchPitchRad());
+        double hoodMinDeg = Math.min(
+                Constants.Hood.HoodPosition.BOTTOM.value,
+                Constants.Hood.HoodPosition.TOP.value);
+        double hoodMaxDeg = Math.max(
+                Constants.Hood.HoodPosition.BOTTOM.value,
+                Constants.Hood.HoodPosition.TOP.value);
+        double clampedHoodDeg = MathUtil.clamp(desiredHoodDeg, hoodMinDeg, hoodMaxDeg);
+        hood.setAngle(clampedHoodDeg);
         shooter.setTargetSpeedRps(shotCalculator.getTargetSpeedRps());
 
         boolean canScoreWindow = mode != AutoShootMode.SCORE || canScoreHubNow();
@@ -172,6 +188,10 @@ public class AutoShoot extends Command {
         SmartDashboard.putBoolean(DASH_PREFIX + "CanFeedNow", readyToFeed);
         SmartDashboard.putBoolean(DASH_PREFIX + "CanScoreWindow", canScoreWindow);
         SmartDashboard.putNumber(DASH_PREFIX + "RobotRelativeYawDeg", robotRelativeYawDeg);
+        SmartDashboard.putNumber(DASH_PREFIX + "TurretDesiredDeg", robotRelativeYawDeg);
+        SmartDashboard.putNumber(DASH_PREFIX + "TurretClampedDeg", clampedTurretDeg);
+        SmartDashboard.putNumber(DASH_PREFIX + "HoodDesiredDeg", desiredHoodDeg);
+        SmartDashboard.putNumber(DASH_PREFIX + "HoodClampedDeg", clampedHoodDeg);
     }
 
     @Override

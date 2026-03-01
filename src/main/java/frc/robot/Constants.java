@@ -2,6 +2,7 @@ package frc.robot;
 
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
+import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap;
 
 public class Constants 
@@ -54,9 +55,8 @@ public class Constants
 
         public static enum HoodPosition 
         {
-            TOP(57.065138),     // TODO - TUNE
-            MIDDLE(0),          // TODO - TUNE
-            BOTTOM(22.315138);
+            TOP(36.03),    
+            BOTTOM(0);
 
             public final double value;
 
@@ -143,5 +143,27 @@ public class Constants
     {
         public static final double MAX_SPINDEX_SPEED_RPS = 101.0; // TODO - TUNE
         public static final double SPINDEXER_SPEED = 0.5; // TODO - TUNE
+    }
+
+    public class Vision
+    {
+        // Match these exactly to PhotonVision camera names on the coprocessor.
+        public static final String LEFT_CAMERA_NAME = "Photon_Left";
+        public static final String RIGHT_CAMERA_NAME = "Photon_Right";
+
+        // Robot-to-camera transforms using measured offsets from robot center.
+        // Input measurements were inches; converted here to meters.
+        public static final Transform3d ROBOT_TO_LEFT_CAMERA = new Transform3d(
+                new Translation3d(
+                        12.681549 * 0.0254,
+                        2.483774 * 0.0254,
+                        12.131760 * 0.0254),
+                new Rotation3d(0.0, 0.0, Math.toRadians(28.0)));
+        public static final Transform3d ROBOT_TO_RIGHT_CAMERA = new Transform3d(
+                new Translation3d(
+                        12.691154 * 0.0254,
+                        -2.866294 * 0.0254,
+                        12.130204 * 0.0254),
+                new Rotation3d(0.0, 0.0, Math.toRadians(-28.0)));
     }
 }
