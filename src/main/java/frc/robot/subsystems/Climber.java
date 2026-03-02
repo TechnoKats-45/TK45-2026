@@ -117,5 +117,6 @@ public class Climber extends SubsystemBase
         SmartDashboard.putNumber("Climber Current Height Inches", getHeightInches());
         SmartDashboard.putNumber("Climber Height Setpoint Inches", currentHeightSetPointInches);
         SmartDashboard.putBoolean("Climber Is Aligned", isAligned());
+        SmartDashboard.putNumber("Climber Current", climber_motor.getSupplyCurrent().getValueAsDouble());
     }
 }

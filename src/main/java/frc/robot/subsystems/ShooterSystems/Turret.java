@@ -22,14 +22,14 @@ public class Turret extends SubsystemBase
 {
     private static final double DEGREES_PER_ROTATION = 360.0;
     private static final int CONFIG_RETRIES = 5;
-    private static final double STATOR_CURRENT_LIMIT_AMPS = 10.0;   // Adjust as necessary to prevent damage to the motor and mechanism - set low rn for testing purposes
-    private static final double SUPPLY_CURRENT_LIMIT_AMPS = 10.0;   // Adjust as necessary to prevent damage to the motor and mechanism - set low rn for testing purposes
-    private static final double MM_CRUISE_RPS = 5.0;
-    private static final double MM_ACCEL_RPS2 = 5.0;
+    private static final double STATOR_CURRENT_LIMIT_AMPS = 120.0;   // Adjust as necessary to prevent damage to the motor and mechanism - set low rn for testing purposes
+    private static final double SUPPLY_CURRENT_LIMIT_AMPS = 60.0;   // Adjust as necessary to prevent damage to the motor and mechanism - set low rn for testing purposes
+    private static final double MM_CRUISE_RPS = 50; // was 5
+    private static final double MM_ACCEL_RPS2 = 50; // was 5
     private static final double SENSOR_TO_MECHANISM_RATIO = 91.36; // TODO - Check this: 16:1 Sport Gearbox + 35T Gear -> 200T Gear = 5.71:1, Total Reduction = 91.36:1
     private static final double SLOT0_KS = 0.0;
     private static final double SLOT0_KV = 0.0;
-    private static final double SLOT0_KP = 10.0;
+    private static final double SLOT0_KP = 100.0;
     private static final double SLOT0_KI = 0.0;
     private static final double SLOT0_KD = 1.0;
     private static final double PEAK_FORWARD_VOLTS = 16.0;
@@ -119,5 +119,6 @@ public class Turret extends SubsystemBase
         SmartDashboard.putNumber("Turret Current Angle", getAngle());
         SmartDashboard.putNumber("Turret Angle Setpoint", getAngleSetpoint());
         SmartDashboard.putBoolean("Turret Is Aligned", isAligned());
+        SmartDashboard.putNumber("Turret Current", turret_rotation_motor.getSupplyCurrent().getValueAsDouble());
     }
 }

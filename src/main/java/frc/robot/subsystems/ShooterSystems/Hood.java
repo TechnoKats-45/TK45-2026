@@ -120,5 +120,6 @@ public class Hood extends SubsystemBase
         SmartDashboard.putNumber("Hood Current Angle", getAngle());
         SmartDashboard.putNumber("Hood Angle Setpoint", getAngleSetpoint());
         SmartDashboard.putBoolean("Hood Is Aligned", isAligned());
+        SmartDashboard.putNumber("Hood Current", hood_rotation_motor.getSupplyCurrent().getValueAsDouble());
     }
 }

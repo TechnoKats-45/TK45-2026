@@ -1,4 +1,4 @@
-package frc.robot.subsystems;
+package frc.robot.subsystems.ShooterSystems;
 
 import static edu.wpi.first.units.Units.RotationsPerSecond;
 import static edu.wpi.first.units.Units.RotationsPerSecondPerSecond;
@@ -26,11 +26,11 @@ public class BallElevator extends SubsystemBase {
 
     private static final double STATOR_CURRENT_LIMIT_AMPS = 120.0;
     private static final double SUPPLY_CURRENT_LIMIT_AMPS = 60.0;
-    private static final double SENSOR_TO_MECHANISM_RATIO = 1.0; // TODO: check gearing, I believe it is 1:1 though
+    private static final double SENSOR_TO_MECHANISM_RATIO = 20.0 / 48.0;
 
     private static final double SLOT0_KS = 0.0; // TODO - tune
     private static final double SLOT0_KV = 0.0; // TODO - tune
-    private static final double SLOT0_KP = 1; // TODO - tune
+    private static final double SLOT0_KP = 100; // TODO - tune
     private static final double SLOT0_KI = 0.0; // TODO - tune
     private static final double SLOT0_KD = 0.0; // TODO - tune
 
@@ -90,7 +90,8 @@ public class BallElevator extends SubsystemBase {
                 .withCurrentLimits(new CurrentLimitsConfigs()
                         .withStatorCurrentLimit(STATOR_CURRENT_LIMIT_AMPS)
                         .withSupplyCurrentLimit(SUPPLY_CURRENT_LIMIT_AMPS)
-                        .withStatorCurrentLimitEnable(true))
+                        .withStatorCurrentLimitEnable(true)
+                        .withSupplyCurrentLimitEnable(true))
                 .withFeedback(new FeedbackConfigs()
                         .withFeedbackSensorSource(FeedbackSensorSourceValue.RotorSensor)
                         .withSensorToMechanismRatio(SENSOR_TO_MECHANISM_RATIO))
@@ -126,5 +127,6 @@ public class BallElevator extends SubsystemBase {
         SmartDashboard.putNumber("Ball Elevator Current Speed RPS", getSpeed());
         SmartDashboard.putNumber("Ball Elevator Speed Setpoint RPS", currentSpeedSetpointRps);
         SmartDashboard.putBoolean("Ball Elevator Is At Speed", isAtSpeed());
+        SmartDashboard.putNumber("Ball Elevator Current", ballElevatorMotor.getSupplyCurrent().getValueAsDouble());
     }
 }

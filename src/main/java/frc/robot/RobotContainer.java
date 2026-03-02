@@ -17,14 +17,18 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.RobotBase;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.RobotState;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
+import frc.robot.commands.AutoIntake;
 import frc.robot.commands.AutoShoot;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.*;
+import frc.robot.subsystems.ShooterSystems.BallElevator;
 import frc.robot.subsystems.ShooterSystems.Hood;
 import frc.robot.subsystems.ShooterSystems.Shooter;
 import frc.robot.subsystems.ShooterSystems.ShotCalculator;
@@ -50,8 +54,11 @@ public class RobotContainer
     private static final double TEST_SPINDEX_STEP = 0.1;
     private static final double TEST_SHOOTER_STEP = 0.1;
     private static final double TEST_SHOOTER_MAX_SPEED_RPS = 40.0;
+    private static final double INTAKE_UP_TOLERANCE_ROTATIONS = 0.02;
     private double testSpindexPercent = 0.0;
     private double testShooterPercent = 0.0;
+    private boolean rightIntakePivotDown = false;
+    private boolean leftIntakePivotDown = false;
 
     public final Drivetrain drivetrain = TunerConstants.createDrivetrain();
     public final Climber s_climber = new Climber();
@@ -73,7 +80,10 @@ public class RobotContainer
             s_spindex,
             s_ballElevator,
             s_shotCalculator,
-            () -> !RobotState.isTest() && operator.getLeftTriggerAxis() <= 0.5, // Inverted LT behavior: AutoShoot runs unless LT is held.
+            () -> DriverStation.isJoystickConnected(0)
+                    && SmartDashboard.getBoolean("AutoShoot/Enabled", true)
+                    && !RobotState.isTest()
+                    && operator.getLeftTriggerAxis() <= 0.5, // Inverted LT behavior: AutoShoot runs unless LT is held.
             () -> 
             {
                 if (RobotState.isTest()) {
@@ -88,12 +98,20 @@ public class RobotContainer
                 return operator.getLeftTriggerAxis() <= 0.5;
             }
     );
+    /*private final AutoIntake autoIntakeCommand = new AutoIntake(
+            drivetrain,
+            l_Intake,
+            r_Intake);
+            */
     
     private final SendableChooser<Command> autoChooser; 
 
     public RobotContainer() 
     {
+        SmartDashboard.putBoolean("AutoShoot/Enabled", true);
         SmartDashboard.putBoolean("AutoShoot/ForceScoreEnable", false);
+        SmartDashboard.putBoolean("AutoIntake/Enabled", true);
+        SmartDashboard.putBoolean("AutoIntake/AutoStowEnabled", true);
         SmartDashboard.putNumber("Test/SpindexPercent", testSpindexPercent);
         SmartDashboard.putNumber("Test/ShooterPercent", testShooterPercent);
         SmartDashboard.putNumber("Test/ShooterSetpointRPS", 0.0);
@@ -156,7 +174,7 @@ public class RobotContainer
             )
         );
 
-        s_shooter.setDefaultCommand(autoShootCommand.onlyIf(() -> !RobotState.isTest()));
+        //s_shooter.setDefaultCommand(autoShootCommand);
 
         // Idle while the robot is disabled. This ensures the configured
         // neutral mode is applied to the drive motors while disabled.
@@ -164,8 +182,6 @@ public class RobotContainer
         RobotModeTriggers.disabled().whileTrue(
             drivetrain.applyRequest(() -> idle).ignoringDisable(true)
         );
-
-        
 
         driver.a().whileTrue(drivetrain.applyRequest(() ->
             point.withModuleDirection(new Rotation2d(-driver.getLeftY(), -driver.getLeftX()))
@@ -179,8 +195,54 @@ public class RobotContainer
         driver.start().and(driver.y()).whileTrue(drivetrain.sysIdQuasistatic(Direction.kForward));
         driver.start().and(driver.x()).whileTrue(drivetrain.sysIdQuasistatic(Direction.kReverse));
 
-        //driver.leftBumper().whileTrue(); // Intake Left
-        //driver.rightBumper().whileTrue(); // Intake Right
+        Command leftDriverIntake = Commands.run(() -> {
+            if (isAutoIntakeAutoStowEnabled()) {
+                r_Intake.setAngle(Constants.RightIntake.PIVOT_ANGLE_UP_STOWED);
+                r_Intake.stop();
+                if (isRightIntakeUp()) {
+                    l_Intake.setAngle(Constants.LeftIntake.PIVOT_ANGLE_DOWN);
+                    l_Intake.runFeed(Constants.LeftIntake.INTAKE_SPEED);
+                } else {
+                    l_Intake.stop();
+                }
+            } else {
+                l_Intake.setAngle(Constants.LeftIntake.PIVOT_ANGLE_DOWN);
+                l_Intake.runFeed(Constants.LeftIntake.INTAKE_SPEED);
+            }
+        }, l_Intake, r_Intake);
+
+        Command rightDriverIntake = Commands.run(() -> {
+            if (isAutoIntakeAutoStowEnabled()) {
+                l_Intake.setAngle(Constants.LeftIntake.PIVOT_ANGLE_UP_STOWED);
+                l_Intake.stop();
+                if (isLeftIntakeUp()) {
+                    r_Intake.setAngle(Constants.RightIntake.PIVOT_ANGLE_DOWN);
+                    r_Intake.runFeed(Constants.RightIntake.INTAKE_SPEED);
+                } else {
+                    r_Intake.stop();
+                }
+            } else {
+                r_Intake.setAngle(Constants.RightIntake.PIVOT_ANGLE_DOWN);
+                r_Intake.runFeed(Constants.RightIntake.INTAKE_SPEED);
+            }
+        }, l_Intake, r_Intake);
+
+        driver.leftBumper().whileTrue(leftDriverIntake.onlyIf(this::isAutoIntakeEnabled));
+        driver.leftBumper().onFalse(l_Intake.runOnce(() -> {
+            l_Intake.stop();
+            if (isAutoIntakeEnabled() && isAutoIntakeAutoStowEnabled()) {
+                l_Intake.setAngle(Constants.LeftIntake.PIVOT_ANGLE_UP_STOWED);
+            }
+        }));
+
+        driver.rightBumper().whileTrue(rightDriverIntake.onlyIf(this::isAutoIntakeEnabled));
+        driver.rightBumper().onFalse(r_Intake.runOnce(() -> {
+            r_Intake.stop();
+            if (isAutoIntakeEnabled() && isAutoIntakeAutoStowEnabled()) {
+                r_Intake.setAngle(Constants.RightIntake.PIVOT_ANGLE_UP_STOWED);
+            }
+        }));
+        //driver.leftTrigger().whileTrue(autoIntakeCommand);
 
         //driver.rightTrigger().whileTrue(); // Manual Shoot
 
@@ -190,35 +252,47 @@ public class RobotContainer
         //CLimber:
         test.a().onTrue(s_climber.runOnce(() -> s_climber.setHeightInches(Constants.Climber.MIN_HEIGHT_INCHES))); // a goes to minimum climber height
         test.y().onTrue(s_climber.runOnce(() -> s_climber.setHeightInches(Constants.Climber.MAX_HEIGHT_INCHES))); // y goes to max climber height
+
         // Right Intake
-        test.b().onTrue(r_Intake.runOnce(() -> r_Intake.setAngle(Constants.RightIntake.MAX_PIVOT_ANGLE)));
-        test.rightTrigger().whileTrue(r_Intake.runOnce(() -> r_Intake.runFeed(0.5)));
-        test.rightTrigger().whileFalse(r_Intake.runOnce(() -> r_Intake.stop())); 
-         // testing at 50% speed
+        test.b().onTrue(r_Intake.runOnce(() -> {
+            rightIntakePivotDown = !rightIntakePivotDown;
+            r_Intake.setAngle(rightIntakePivotDown
+                    ? Constants.RightIntake.PIVOT_ANGLE_DOWN
+                    : Constants.RightIntake.PIVOT_ANGLE_UP_STOWED);
+        }));
+        test.rightBumper().whileTrue(r_Intake.runOnce(() -> r_Intake.runFeed(-1.0)));  // testing at 100% speed
+        test.rightBumper().whileFalse(r_Intake.runOnce(() -> r_Intake.stop())); 
+        
         // Left Intake
-        test.x().onTrue(r_Intake.runOnce(() -> l_Intake.setAngle(Constants.LeftIntake.MAX_PIVOT_ANGLE)));
-        test.leftTrigger().whileTrue(l_Intake.runOnce(() -> l_Intake.runFeed(0.5))); // testing at 50% speed
-        test.leftTrigger().whileFalse(l_Intake.runOnce(() -> l_Intake.stop()));
+        test.x().onTrue(l_Intake.runOnce(() -> {
+            leftIntakePivotDown = !leftIntakePivotDown;
+            l_Intake.setAngle(leftIntakePivotDown
+                    ? Constants.LeftIntake.PIVOT_ANGLE_DOWN
+                    : Constants.LeftIntake.PIVOT_ANGLE_UP_STOWED);
+        }));
+        test.leftBumper().whileTrue(l_Intake.runOnce(() -> l_Intake.runFeed(1)));   // testing at 50% speed
+        test.leftBumper().whileFalse(l_Intake.runOnce(() -> l_Intake.stop()));
+
         //Spindex:
         test.povUp().onTrue(s_spindex.runOnce(() -> {
-            s_spindex.setSpeed(Constants.Spindexer.MAX_SPINDEX_SPEED_RPS*75);
+            s_spindex.setSpeed(Constants.Spindexer.MAX_SPINDEX_SPEED_RPS/4);
         }));
         test.povDown().onTrue(s_spindex.runOnce(() -> {
-            s_spindex.setDumbSpeed(0);
+            s_spindex.stop();
         }));
         //Shooter
-        test.rightBumper().onTrue(s_shooter.runOnce(() -> {
-            s_shooter.setDumbSpeed(1); // testing at 50% speed
+        test.rightTrigger().onTrue(s_shooter.runOnce(() -> {
+            s_shooter.setSpeed(Constants.Shooter.MAX_SPEED_RPS);
         }));
-        test.leftBumper().onTrue(s_shooter.runOnce(() -> {
-            s_shooter.setDumbSpeed(0.0); // stop shooter
+        test.rightTrigger().onFalse(s_shooter.runOnce(() -> {
+            s_shooter.stop(); // stop shooter
         }));
         // Test Ball Elevator
         test.povRight().onTrue(s_ballElevator.runOnce(() -> {
-            s_ballElevator.setSpeed(129);
+            s_ballElevator.setSpeed(-129/4);  //-129 is max RPS
         }));
         test.povLeft().onTrue(s_ballElevator.runOnce(() -> {
-            s_ballElevator.setSpeed(0);
+            s_ballElevator.stop();
         }));
 
         // TEST Hood
@@ -253,5 +327,23 @@ public class RobotContainer
         s_climber.printDiagnostics();
 
         // Add more subsystem diagnostics as needed //TODO
+    }
+
+    private boolean isLeftIntakeUp() {
+        return Math.abs(l_Intake.getAngle() - Constants.LeftIntake.PIVOT_ANGLE_UP_STOWED)
+                <= INTAKE_UP_TOLERANCE_ROTATIONS;
+    }
+
+    private boolean isRightIntakeUp() {
+        return Math.abs(r_Intake.getAngle() - Constants.RightIntake.PIVOT_ANGLE_UP_STOWED)
+                <= INTAKE_UP_TOLERANCE_ROTATIONS;
+    }
+
+    private boolean isAutoIntakeAutoStowEnabled() {
+        return SmartDashboard.getBoolean("AutoIntake/AutoStowEnabled", true);
+    }
+
+    private boolean isAutoIntakeEnabled() {
+        return SmartDashboard.getBoolean("AutoIntake/Enabled", true);
     }
 }

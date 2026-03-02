@@ -83,6 +83,8 @@ public class Constants
             // DISTANCE_TO_SHOT_SPEED.put(5.0, 8.25);
             // DISTANCE_TO_SHOT_SPEED.put(10.0, 10.0);
         }
+
+        public static final double MAX_SPEED_RPS = 120.0; // TODO - TUNE
     }
 
 
@@ -116,8 +118,8 @@ public class Constants
         public static final double INTAKE_SPEED = 0.5; // TODO - TUNE
         public static final double INTAKE_ROTATE_SPEED = 0.5; // TODO - TUNE
         public static final double ANGLE_TOLERANCE_DEGREES = 1; // TODO - TUNE
-        public static final double MAX_PIVOT_ANGLE = 0.5 ;// TODO - tune
-        public static final double MIN_PIVOT_ANGLE = 0 ;// TODO -tune
+        public static final double PIVOT_ANGLE_DOWN = 0.0;
+        public static final double PIVOT_ANGLE_UP_STOWED = 0.316650390625; // TODO - tune
         public static final double SPEED_TOLERANCE_RPS = 0.5; // TODO - TUNE
     }
     public class RightIntake
@@ -125,8 +127,8 @@ public class Constants
         public static final double INTAKE_SPEED = 0.5; // TODO - TUNE
         public static final double INTAKE_ROTATE_SPEED = 0.5; // TODO - TUNE
         public static final double ANGLE_TOLERANCE_DEGREES = 1; // TODO - TUNE
-        public static final double MAX_PIVOT_ANGLE = 0.5 ;// TODO - tune
-        public static final double MIN_PIVOT_ANGLE = 0 ;// TODO -tune
+        public static final double PIVOT_ANGLE_DOWN = 0.0;
+        public static final double PIVOT_ANGLE_UP_STOWED = 0.316650390625;
         public static final double SPEED_TOLERANCE_RPS = 0.5; // TODO - TUNE
     }
 

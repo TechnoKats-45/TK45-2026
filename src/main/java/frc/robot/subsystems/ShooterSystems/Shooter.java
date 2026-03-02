@@ -23,7 +23,7 @@ public class Shooter extends SubsystemBase
 {
     private static final int CONFIG_RETRIES = 5;
 
-    private static final double STATOR_CURRENT_LIMIT_AMPS = 80.0;
+    private static final double STATOR_CURRENT_LIMIT_AMPS = 120.0;
     private static final double SUPPLY_CURRENT_LIMIT_AMPS = 60.0;
     private static final double SENSOR_TO_MECHANISM_RATIO = 24/23; // TODO: check ratio
     private static final double MM_CRUISE_RPS = 120.0;
@@ -31,7 +31,7 @@ public class Shooter extends SubsystemBase
 
     private static final double SLOT0_KS = 0.0; // TODO - tune
     private static final double SLOT0_KV = 0.0; // TODO - tune
-    private static final double SLOT0_KP = 1000; // TODO - tune
+    private static final double SLOT0_KP = 500; // TODO - tune
     private static final double SLOT0_KI = 0.0; // TODO - tune
     private static final double SLOT0_KD = 0.0; // TODO - tune
 
@@ -142,5 +142,7 @@ public class Shooter extends SubsystemBase
         SmartDashboard.putNumber("Shooter Current Speed RPS", getSpeed());
         SmartDashboard.putNumber("Shooter Speed Setpoint RPS", currentSpeedSetpointRps);
         SmartDashboard.putBoolean("Shooter Is At Speed", isAtSpeed());
+        SmartDashboard.putNumber("Shooter Current", shooterLeftMotor.getSupplyCurrent().getValueAsDouble());
+
     }
 }

@@ -28,11 +28,11 @@ public class Spindexer extends SubsystemBase
 
     private static final double STATOR_CURRENT_LIMIT_AMPS = 120;
     private static final double SUPPLY_CURRENT_LIMIT_AMPS = 60.0;
-    private static final double SENSOR_TO_MECHANISM_RATIO = 1.0; 
+    private static final double SENSOR_TO_MECHANISM_RATIO = 1/4*24/26;  // 1/4 Sport, 24/26 pulleys
 
     private static final double SLOT0_KS = 0.0; // TODO - tune
     private static final double SLOT0_KV = 0.0; // TODO - tune
-    private static final double SLOT0_KP = 1; // TODO - tune
+    private static final double SLOT0_KP = 1000; // TODO - tune
     private static final double SLOT0_KI = 0.0; // TODO - tune
     private static final double SLOT0_KD = 0.0; // TODO - tune
 
@@ -47,7 +47,7 @@ public class Spindexer extends SubsystemBase
     private final VelocityTorqueCurrentFOC velocityRequest = new VelocityTorqueCurrentFOC(0);
     private double currentSpeedSetpointRps = 0.0;
     private final MotionMagicVelocityVoltage motionMagicVelocityRequest = new MotionMagicVelocityVoltage(0);
-    private static final double MM_CRUISE_RPS = 5.0;
+    private static final double MM_CRUISE_RPS = 100.0;
     private static final double MM_ACCEL_RPS2 = 5.0;
 
 
