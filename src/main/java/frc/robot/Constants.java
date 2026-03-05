@@ -4,6 +4,7 @@ import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap;
+import java.util.TreeMap;
 
 public class Constants 
 {
@@ -55,8 +56,8 @@ public class Constants
 
         public static enum HoodPosition 
         {
-            TOP(36.03),    
-            BOTTOM(0);
+            TOP(57.0),
+            BOTTOM(22.5);
 
             public final double value;
 
@@ -69,28 +70,29 @@ public class Constants
 
     public class Shooter
     {
+
+        public static final double SPEED_TOLERANCE_RPS = 10;
         public static final Transform3d BALL_TRANSFORM_CENTER = new Transform3d(-0.24, 0, 0.5, Rotation3d.kZero);
-        
-        public static final InterpolatingDoubleTreeMap DISTANCE_TO_SHOT_SPEED = new InterpolatingDoubleTreeMap();
+
+        public record ShotProfile(double hoodDeg, double speedRps) {}
+        public static final TreeMap<Double, ShotProfile> DISTANCE_ANGLE_SPEED = new TreeMap<>();
         static {
-            DISTANCE_TO_SHOT_SPEED.put(2.07, 7.0);  // TODO - TUNE
-            // DISTANCE_TO_SHOT_SPEED.put(2.41, 41.0);
-            // DISTANCE_TO_SHOT_SPEED.put(3.20, 45.0);
-            // DISTANCE_TO_SHOT_SPEED.put(3.87, 49.0);
-            // DISTANCE_TO_SHOT_SPEED.put(4.57, 52.0);
-            DISTANCE_TO_SHOT_SPEED.put(4.92, 9.0);  // TODO - TUNE
-            // DISTANCE_TO_SHOT_SPEED.put(0.0, 7.0);
-            // DISTANCE_TO_SHOT_SPEED.put(5.0, 8.25);
-            // DISTANCE_TO_SHOT_SPEED.put(10.0, 10.0);
+            DISTANCE_ANGLE_SPEED.put(60.0, new ShotProfile(22.5, 51.5));// Infront of Hub (not touching)
+            DISTANCE_ANGLE_SPEED.put(70.0, new ShotProfile(22.5, 51.5));// Mid 
+            DISTANCE_ANGLE_SPEED.put(120.0, new ShotProfile(22.5, 61.7)); // Back Against Tower
+            DISTANCE_ANGLE_SPEED.put(150.0, new ShotProfile(22.5, 61.7));// Next to Tower
+            DISTANCE_ANGLE_SPEED.put(170.0, new ShotProfile(22.5, 75.2));//Against Human Station
+            DISTANCE_ANGLE_SPEED.put(215.0, new ShotProfile(22.5, 89.0));// Corner
+            DISTANCE_ANGLE_SPEED.put(110.0, new ShotProfile(22.5, 72.5));//Bump 
+            DISTANCE_ANGLE_SPEED.put(145.0, new ShotProfile(22.5, 85.5));//Trench 
         }
 
-        public static final double MAX_SPEED_RPS = 120.0; // TODO - TUNE
+        public static final double MAX_SPEED_RPS = 120.0;
     }
-
 
     public class Turret
     {     
-        public static final double AngleToleranceDegrees = 1.0; // TODO - TUNE
+        public static final double AngleToleranceDegrees = 1.0;
 
         public static enum TurretPosition 
         {
@@ -109,8 +111,8 @@ public class Constants
 
     public class Ball_Elevator
     {
-        public static final double ELEVATOR_SPEED = 0.5; // TODO - TUNE
-        public static final double MAX_ELEVATOR_SPEED_RPS = 129; // TODO - TUNE
+        //public static final double ELEVATOR_SPEED = 0.5; // TODO - TUNE
+        public static final double MAX_ELEVATOR_SPEED_RPS = 96.4;
     }
 
     public class LeftIntake

@@ -48,6 +48,9 @@ public class Vision extends SubsystemBase {
                 PoseStrategy.MULTI_TAG_PNP_ON_COPROCESSOR,
                 Constants.Vision.ROBOT_TO_RIGHT_CAMERA);
         rightEstimator.setMultiTagFallbackStrategy(PoseStrategy.LOWEST_AMBIGUITY);
+
+        SmartDashboard.putNumber("Vision/MaxTranslationJumpM", 1.5);
+        SmartDashboard.putNumber("Vision/MaxRotationJumpDeg", 25.0);
     }
 
     @Override
@@ -86,8 +89,23 @@ public class Vision extends SubsystemBase {
             }
 
             Pose2d estimatedPose = estimate.get().estimatedPose.toPose2d();
+            Pose2d currentPose = drivetrain.getState().Pose;
+            double maxTransJump = SmartDashboard.getNumber("Vision/MaxTranslationJumpM", 1.5);
+            double maxRotJumpDeg = SmartDashboard.getNumber("Vision/MaxRotationJumpDeg", 25.0);
+            double transJump = estimatedPose.getTranslation().getDistance(currentPose.getTranslation());
+            double rotJumpDeg = Math.abs(estimatedPose.getRotation().minus(currentPose.getRotation()).getDegrees());
+            if (transJump > maxTransJump || rotJumpDeg > maxRotJumpDeg) {
+                SmartDashboard.putBoolean("Vision/" + label + "/EstimateAccepted", false);
+                SmartDashboard.putNumber("Vision/" + label + "/RejectedTransJumpM", transJump);
+                SmartDashboard.putNumber("Vision/" + label + "/RejectedRotJumpDeg", rotJumpDeg);
+                continue;
+            }
+            // Preserve current drivetrain rotation so vision doesn't reset the bot's heading.
+            Pose2d fusedPose = new Pose2d(
+                    estimatedPose.getTranslation(),
+                    drivetrain.getState().Pose.getRotation());
             Matrix<N3, N1> stdDevs = getVisionStdDevs(result);
-            drivetrain.addVisionMeasurement(estimatedPose, estimate.get().timestampSeconds, stdDevs);
+            drivetrain.addVisionMeasurement(fusedPose, estimate.get().timestampSeconds, stdDevs);
             SmartDashboard.putBoolean("Vision/" + label + "/EstimateAccepted", true);
 
             SmartDashboard.putNumber("Vision/" + label + "/TagCount", result.targets.size());

@@ -16,7 +16,8 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import frc.robot.subsystems.Drivetrain;
 
 import static frc.robot.Constants.Shooter.BALL_TRANSFORM_CENTER;
-import static frc.robot.Constants.Shooter.DISTANCE_TO_SHOT_SPEED;
+import static frc.robot.Constants.Shooter.DISTANCE_ANGLE_SPEED;
+import static frc.robot.Constants.Shooter.ShotProfile;
 
 // stores current target and actively computes effective target
 @LoggedObject
@@ -45,6 +46,8 @@ public class ShotCalculator extends SubsystemBase {
 
     public ShotCalculator(Drivetrain drivetrain) {
         this.drivetrain = drivetrain;
+        SmartDashboard.putBoolean("ShotCalc/UseVelocityComp", true);
+        SmartDashboard.putBoolean("ShotCalc/UseAccelComp", true);
     }
 
     @Override
@@ -53,15 +56,25 @@ public class ShotCalculator extends SubsystemBase {
 
         targetDistance = drivetrainPose.getTranslation().getDistance(targetLocation.toPose2d().getTranslation());
         if (!useManualTargetSpeed) {
-            targetSpeedRps = DISTANCE_TO_SHOT_SPEED.get(targetDistance);
+            ShotProfile profile = getProfileForDistanceInches(
+                    edu.wpi.first.math.util.Units.metersToInches(targetDistance));
+            if (profile != null) {
+                targetSpeedRps = profile.speedRps();
+            }
         }
 
         Pose3d shooterPose = new Pose3d(drivetrainPose).plus(BALL_TRANSFORM_CENTER);
 
         ChassisSpeeds drivetrainSpeeds = ChassisSpeeds.fromRobotRelativeSpeeds(
                 drivetrain.getState().Speeds, drivetrainPose.getRotation());
-        ChassisAccelerations drivetrainAccelerations = new ChassisAccelerations(
-                drivetrainSpeeds, prevDrivetrainSpeeds, 0.02);
+        boolean useVelocityComp = SmartDashboard.getBoolean("ShotCalc/UseVelocityComp", true);
+        boolean useAccelComp = SmartDashboard.getBoolean("ShotCalc/UseAccelComp", true);
+        if (!useVelocityComp) {
+            drivetrainSpeeds = new ChassisSpeeds();
+        }
+        ChassisAccelerations drivetrainAccelerations = useAccelComp
+                ? new ChassisAccelerations(drivetrainSpeeds, prevDrivetrainSpeeds, 0.02)
+                : new ChassisAccelerations(new ChassisSpeeds(), new ChassisSpeeds(), 0.02);
         prevDrivetrainSpeeds = drivetrainSpeeds;
 
         try {
@@ -101,6 +114,32 @@ public class ShotCalculator extends SubsystemBase {
 
     public double getTargetSpeedRps() {
         return targetSpeedRps;
+    }
+
+    public ShotProfile getProfileForDistanceInches(double distanceInches) {
+        if (DISTANCE_ANGLE_SPEED.isEmpty()) {
+            return null;
+        }
+        var floor = DISTANCE_ANGLE_SPEED.floorEntry(distanceInches);
+        var ceil = DISTANCE_ANGLE_SPEED.ceilingEntry(distanceInches);
+        if (floor == null) {
+            return ceil.getValue();
+        }
+        if (ceil == null) {
+            return floor.getValue();
+        }
+        if (floor.getKey().equals(ceil.getKey())) {
+            return floor.getValue();
+        }
+
+        double d0 = floor.getKey();
+        double d1 = ceil.getKey();
+        double t = (distanceInches - d0) / (d1 - d0);
+        ShotProfile p0 = floor.getValue();
+        ShotProfile p1 = ceil.getValue();
+        double hoodDeg = p0.hoodDeg() + (p1.hoodDeg() - p0.hoodDeg()) * t;
+        double speedRps = p0.speedRps() + (p1.speedRps() - p0.speedRps()) * t;
+        return new ShotProfile(hoodDeg, speedRps);
     }
     public void printDiagnostics() {
         SmartDashboard.putNumber("Shot Calculator Target Distance", targetDistance);

@@ -12,6 +12,7 @@ import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.util.Units;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StructArrayPublisher;
@@ -62,6 +63,13 @@ public class AutoShoot extends Command {
             .getTable("AutoShoot")
             .getStructArrayTopic("Trajectory3dAllowed", Pose3d.struct)
             .publish();
+    private String lastModeName = AutoShootMode.OFF.name();
+    private int lastTrajectoryPointCount = 0;
+    private boolean lastAutoEnabled = false;
+    private boolean lastScoreEnabled = false;
+    private double lastTurretDeg = Double.NaN;
+    private double lastTurretTimestamp = 0.0;
+    private double lastTurretFilteredDeg = Double.NaN;
 
     public AutoShoot(
             Drivetrain drivetrain,
@@ -88,18 +96,29 @@ public class AutoShoot extends Command {
         SmartDashboard.putData("AutoShoot Zones", zoneField);
         // Seed the field overlay so zone lines are visible before robot is enabled.
         publishZoneDebug(new Pose2d(), AutoShootMode.OFF);
+        SmartDashboard.putString(DASH_PREFIX + "Mode", lastModeName);
+        SmartDashboard.putNumber(DASH_PREFIX + "TrajectoryPointCount", lastTrajectoryPointCount);
+        SmartDashboard.putBoolean(DASH_PREFIX + "AutoEnabled", lastAutoEnabled);
+        SmartDashboard.putBoolean(DASH_PREFIX + "ScoreEnable", lastScoreEnabled);
     }
 
     @Override
     public void execute() {
         Pose2d robotPose = drivetrain.getState().Pose;
+        lastAutoEnabled = autoEnabledSupplier.getAsBoolean();
+        lastScoreEnabled = scoreEnableSupplier.getAsBoolean();
+        SmartDashboard.putBoolean(DASH_PREFIX + "AutoEnabled", lastAutoEnabled);
+        SmartDashboard.putBoolean(DASH_PREFIX + "ScoreEnable", lastScoreEnabled);
         AutoShootMode mode = determineMode(robotPose);
         publishZoneDebug(robotPose, mode);
 
         if (mode == AutoShootMode.OFF) {
             stopFeedAndShooter();
             clearShotTrajectory();
-            SmartDashboard.putString(DASH_PREFIX + "Mode", mode.name());
+            lastModeName = mode.name();
+            lastTrajectoryPointCount = 0;
+            SmartDashboard.putString(DASH_PREFIX + "Mode", lastModeName);
+            SmartDashboard.putNumber(DASH_PREFIX + "TrajectoryPointCount", lastTrajectoryPointCount);
             SmartDashboard.putBoolean(DASH_PREFIX + "CanFeedNow", false);
             return;
         }
@@ -107,10 +126,18 @@ public class AutoShoot extends Command {
         Alliance currentAlliance = getAllianceForAutoShoot();
         Pose3d allianceHubCenter = FieldConstants.Hub.getCenterForAlliance(Optional.of(currentAlliance));
         Pose3d target = (mode == AutoShootMode.SCORE) ? allianceHubCenter : getBestPassTarget(robotPose, allianceHubCenter);
-        if (mode == AutoShootMode.SCORE) {
-            shotCalculator.setTarget(target);
+        // Always show 2D aim point (no ballistics needed) for AdvantageScope.
+        zoneField.getObject("AimPoint2d").setPose(target.toPose2d());
+        boolean useManualSpeed = SmartDashboard.getBoolean(DASH_PREFIX + "UseManualShooterSpeed", false);
+        double manualSpeedRps = SmartDashboard.getNumber(DASH_PREFIX + "ManualShooterSpeedRps", 10.0);
+        var scoreProfile = shotCalculator.getProfileForDistanceInches(Units.metersToInches(
+                robotPose.getTranslation().getDistance(allianceHubCenter.toPose2d().getTranslation())));
+        if (useManualSpeed) {
+            shotCalculator.setTarget(target, manualSpeedRps);
+        } else if (mode == AutoShootMode.SCORE && scoreProfile != null) {
+            shotCalculator.setTarget(target, scoreProfile.speedRps());
         } else {
-            shotCalculator.setTarget(target, SmartDashboard.getNumber(DASH_PREFIX + "PassShotSpeedRps", 11.0));
+            shotCalculator.setTarget(target);
         }
 
         Pose3d shooterPose = new Pose3d(robotPose);
@@ -118,11 +145,13 @@ public class AutoShoot extends Command {
         if (effectiveTarget.equals(Pose3d.kZero)) {
             effectiveTarget = target;
         }
+        zoneField.getObject("AimPointEffective2d").setPose(effectiveTarget.toPose2d());
 
         double dx = effectiveTarget.getX() - shooterPose.getX();
         double dy = effectiveTarget.getY() - shooterPose.getY();
         double fieldYawRad = Math.atan2(dy, dx);
         double robotRelativeYawDeg = Math.toDegrees(MathUtil.angleModulus(fieldYawRad - robotPose.getRotation().getRadians()));
+        double targetDistanceM = robotPose.getTranslation().getDistance(target.toPose2d().getTranslation());
 
         double turretMinDeg = Math.min(
                 Constants.Turret.TurretPosition.LEFT.value,
@@ -131,15 +160,54 @@ public class AutoShoot extends Command {
                 Constants.Turret.TurretPosition.LEFT.value,
                 Constants.Turret.TurretPosition.RIGHT.value);
         double clampedTurretDeg = MathUtil.clamp(robotRelativeYawDeg, turretMinDeg, turretMaxDeg);
+        double now = Timer.getFPGATimestamp();
+        double deadbandDeg = SmartDashboard.getNumber(DASH_PREFIX + "TurretDeadbandDeg", 0.75);
+        double filterAlpha = SmartDashboard.getNumber(DASH_PREFIX + "TurretFilterAlpha", 0.2);
+        if (Double.isNaN(lastTurretFilteredDeg)) {
+            lastTurretFilteredDeg = clampedTurretDeg;
+        } else {
+            double delta = clampedTurretDeg - lastTurretFilteredDeg;
+            if (Math.abs(delta) > deadbandDeg) {
+                lastTurretFilteredDeg = lastTurretFilteredDeg + delta * filterAlpha;
+            }
+            clampedTurretDeg = lastTurretFilteredDeg;
+        }
+        if (Double.isNaN(lastTurretDeg)) {
+            lastTurretDeg = clampedTurretDeg;
+            lastTurretTimestamp = now;
+        }
+        double dt = Math.max(0.0, now - lastTurretTimestamp);
+        double maxDegPerSec = SmartDashboard.getNumber(DASH_PREFIX + "TurretMaxDegPerSec", 180.0);
+        double maxStep = maxDegPerSec * dt;
+        double delta = clampedTurretDeg - lastTurretDeg;
+        if (Math.abs(delta) > maxStep) {
+            clampedTurretDeg = lastTurretDeg + Math.copySign(maxStep, delta);
+        }
         turret.setAngle(clampedTurretDeg);
+        lastTurretDeg = clampedTurretDeg;
+        lastTurretTimestamp = now;
         InterceptSolution intercept = shotCalculator.getInterceptSolution();
         if (intercept == null) {
             intercept = new InterceptSolution(target, 0.0, 0.0, 0.0, 0.0);
         }
+        SmartDashboard.putNumber(DASH_PREFIX + "Intercept/FlightTimeS", intercept.flightTime());
+        SmartDashboard.putNumber(DASH_PREFIX + "Intercept/LaunchSpeed", intercept.launchSpeed());
+        SmartDashboard.putNumber(DASH_PREFIX + "Intercept/LaunchPitchDeg", Math.toDegrees(intercept.launchPitchRad()));
+        SmartDashboard.putNumber(DASH_PREFIX + "TargetSpeedRps", shotCalculator.getTargetSpeedRps());
         TrajectoryData trajectoryData = buildShotTrajectory(shooterPose, effectiveTarget, intercept);
         publishRawTrajectory(trajectoryData);
+        lastTrajectoryPointCount = trajectoryData == null ? 0 : trajectoryData.poses2d.size();
+        SmartDashboard.putNumber(DASH_PREFIX + "TrajectoryPointCount", lastTrajectoryPointCount);
 
         double desiredHoodDeg = Math.toDegrees(intercept.launchPitchRad());
+        boolean useManualHoodAngle = SmartDashboard.getBoolean(DASH_PREFIX + "UseManualHoodAngle", false);
+        if (!useManualHoodAngle) {
+            if (mode == AutoShootMode.SCORE && scoreProfile != null) {
+                desiredHoodDeg = scoreProfile.hoodDeg();
+            }
+        } else {
+            desiredHoodDeg = SmartDashboard.getNumber(DASH_PREFIX + "ManualHoodAngleDeg", 0.0);
+        }
         double hoodMinDeg = Math.min(
                 Constants.Hood.HoodPosition.BOTTOM.value,
                 Constants.Hood.HoodPosition.TOP.value);
@@ -148,12 +216,12 @@ public class AutoShoot extends Command {
                 Constants.Hood.HoodPosition.TOP.value);
         double clampedHoodDeg = MathUtil.clamp(desiredHoodDeg, hoodMinDeg, hoodMaxDeg);
         hood.setAngle(clampedHoodDeg);
-        shooter.setTargetSpeedRps(shotCalculator.getTargetSpeedRps());
+        shooter.setTargetSpeedRps(1200);  // shotCalculator.getTargetSpeedRps()
 
         boolean canScoreWindow = mode != AutoShootMode.SCORE || canScoreHubNow();
         boolean hasBallisticSolution = intercept.flightTime() > 0.0
                 && intercept.launchSpeed() > 0.0;
-        boolean inRange = robotPose.getTranslation().getDistance(target.toPose2d().getTranslation())
+        boolean inRange = targetDistanceM
                 <= SmartDashboard.getNumber(
                         DASH_PREFIX + (mode == AutoShootMode.SCORE ? "ScoreMaxDistanceM" : "PassMaxDistanceM"),
                         mode == AutoShootMode.SCORE ? 6.0 : 10.0);
@@ -161,37 +229,49 @@ public class AutoShoot extends Command {
         double aimToleranceDeg = SmartDashboard.getNumber(
                 DASH_PREFIX + (mode == AutoShootMode.SCORE ? "ScoreAimToleranceDeg" : "PassAimToleranceDeg"),
                 mode == AutoShootMode.SCORE ? 2.5 : 6.0);
-        double speedToleranceRps = SmartDashboard.getNumber(
-                DASH_PREFIX + (mode == AutoShootMode.SCORE ? "ScoreSpeedToleranceRps" : "PassSpeedToleranceRps"),
-                mode == AutoShootMode.SCORE ? 1.0 : 2.5);
+
+        boolean shooterAtSpeed = shooter.isAtSpeed();
+        boolean hoodAligned = hood.isAligned(aimToleranceDeg);
+        boolean turretAligned = turret.isAligned(aimToleranceDeg);
 
         boolean readyToFeed = canScoreWindow
                 && hasBallisticSolution
                 && inRange
-                && shooter.isAtSpeed(speedToleranceRps)
-                && hood.isAligned(aimToleranceDeg)
-                && turret.isAligned(aimToleranceDeg);
+                && shooterAtSpeed
+                && hoodAligned
+                && turretAligned;
         publishAllowedTrajectory(trajectoryData, canScoreWindow);
 
+        double feedPercent = SmartDashboard.getNumber(
+                DASH_PREFIX + (mode == AutoShootMode.SCORE ? "ScoreFeedPercent" : "PassFeedPercent"),
+                mode == AutoShootMode.SCORE ? 0.85 : 1.0);
+        // Always keep the spindexer moving while AutoShoot is active.
+        double spindexPercent = SmartDashboard.getNumber(
+                DASH_PREFIX + "SpindexAlwaysPercent",
+                0.35);
+        spindex.runFeed(spindexPercent);
         if (readyToFeed) {
-            double feedPercent = SmartDashboard.getNumber(
-                    DASH_PREFIX + (mode == AutoShootMode.SCORE ? "ScoreFeedPercent" : "PassFeedPercent"),
-                    mode == AutoShootMode.SCORE ? 0.85 : 1.0);
-            spindex.runFeed(feedPercent);
             ballElevator.runFeed(feedPercent);
         } else {
-            spindex.stop();
             ballElevator.stop();
         }
 
-        SmartDashboard.putString(DASH_PREFIX + "Mode", mode.name());
+        lastModeName = mode.name();
+        SmartDashboard.putString(DASH_PREFIX + "Mode", lastModeName);
         SmartDashboard.putBoolean(DASH_PREFIX + "CanFeedNow", readyToFeed);
         SmartDashboard.putBoolean(DASH_PREFIX + "CanScoreWindow", canScoreWindow);
+        SmartDashboard.putBoolean(DASH_PREFIX + "Ready/CanScoreWindow", canScoreWindow);
+        SmartDashboard.putBoolean(DASH_PREFIX + "Ready/HasBallisticSolution", hasBallisticSolution);
+        SmartDashboard.putBoolean(DASH_PREFIX + "Ready/InRange", inRange);
+        SmartDashboard.putBoolean(DASH_PREFIX + "Ready/ShooterAtSpeed", shooterAtSpeed);
+        SmartDashboard.putBoolean(DASH_PREFIX + "Ready/HoodAligned", hoodAligned);
+        SmartDashboard.putBoolean(DASH_PREFIX + "Ready/TurretAligned", turretAligned);
         SmartDashboard.putNumber(DASH_PREFIX + "RobotRelativeYawDeg", robotRelativeYawDeg);
         SmartDashboard.putNumber(DASH_PREFIX + "TurretDesiredDeg", robotRelativeYawDeg);
         SmartDashboard.putNumber(DASH_PREFIX + "TurretClampedDeg", clampedTurretDeg);
         SmartDashboard.putNumber(DASH_PREFIX + "HoodDesiredDeg", desiredHoodDeg);
         SmartDashboard.putNumber(DASH_PREFIX + "HoodClampedDeg", clampedHoodDeg);
+        SmartDashboard.putNumber(DASH_PREFIX + "TargetDistanceM", targetDistanceM);
     }
 
     @Override
@@ -202,6 +282,22 @@ public class AutoShoot extends Command {
     @Override
     public boolean isFinished() {
         return false;
+    }
+
+    public String getLastModeName() {
+        return lastModeName;
+    }
+
+    public int getLastTrajectoryPointCount() {
+        return lastTrajectoryPointCount;
+    }
+
+    public boolean getLastAutoEnabled() {
+        return lastAutoEnabled;
+    }
+
+    public boolean getLastScoreEnabled() {
+        return lastScoreEnabled;
     }
 
     private AutoShootMode determineMode(Pose2d robotPose) {
@@ -523,10 +619,18 @@ public class AutoShoot extends Command {
         SmartDashboard.putNumber(DASH_PREFIX + "PassMaxDistanceM", 10.0);
         SmartDashboard.putNumber(DASH_PREFIX + "ScoreFeedPercent", 0.85);
         SmartDashboard.putNumber(DASH_PREFIX + "PassFeedPercent", 1.0);
+        SmartDashboard.putNumber(DASH_PREFIX + "SpindexAlwaysPercent", 1.0);
 
         // Pass launch speed override used only in PASS mode.
         // Raise if passes are short; lower if passes overshoot.
-        SmartDashboard.putNumber(DASH_PREFIX + "PassShotSpeedRps", 11.0);
+        // Note: pass speed and hood pitch scaling removed in favor of DISTANCE_ANGLE_SPEED table.
+        SmartDashboard.putBoolean(DASH_PREFIX + "UseManualShooterSpeed", false);
+        SmartDashboard.putNumber(DASH_PREFIX + "ManualShooterSpeedRps", 10.0);
+        SmartDashboard.putBoolean(DASH_PREFIX + "UseManualHoodAngle", false);
+        SmartDashboard.putNumber(DASH_PREFIX + "ManualHoodAngleDeg", 0.0);
+        SmartDashboard.putNumber(DASH_PREFIX + "TurretMaxDegPerSec", 180.0);
+        SmartDashboard.putNumber(DASH_PREFIX + "TurretDeadbandDeg", 0.75);
+        SmartDashboard.putNumber(DASH_PREFIX + "TurretFilterAlpha", 0.2);
         SmartDashboard.putNumber(DASH_PREFIX + "TrajectoryStepS", 0.05);
         SmartDashboard.putString(DASH_PREFIX + "AllianceSource", "Unknown");
         SmartDashboard.putBoolean(DASH_PREFIX + "DSAlliancePresent", false);

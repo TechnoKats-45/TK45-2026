@@ -55,6 +55,8 @@ public class Robot extends TimedRobot
         m_timeAndJoystickReplay.update();
         CommandScheduler.getInstance().run(); 
         m_robotContainer.processDashboardZeroRequests();
+        m_robotContainer.processDashboardManualShooterRequests();
+        m_robotContainer.processAutoShootCommand();
         m_robotContainer.printDiagnostics();
     }
 

@@ -82,16 +82,18 @@ public class RobotContainer
             s_shotCalculator,
             () -> DriverStation.isJoystickConnected(0)
                     && SmartDashboard.getBoolean("AutoShoot/Enabled", true)
-                    && !RobotState.isTest()
-                    && operator.getLeftTriggerAxis() <= 0.5, // Inverted LT behavior: AutoShoot runs unless LT is held.
+                    && !RobotState.isTest(),
             () -> 
             {
                 if (RobotState.isTest()) {
                     return false;
                 }
-                // Sim helper: allow forcing score-enable without a physical LT input.
-                if (RobotBase.isSimulation()
-                        && SmartDashboard.getBoolean("AutoShoot/ForceScoreEnable", false)) {
+                // Allow forcing score-enable without a physical LT input.
+                if (SmartDashboard.getBoolean("AutoShoot/ForceScoreEnable", false)) {
+                    return true;
+                }
+                // If operator controller is not connected, allow scoring by default.
+                if (!DriverStation.isJoystickConnected(1)) {
                     return true;
                 }
                 // Match inverted LT behavior: score-enable while LT is NOT held.
@@ -110,8 +112,14 @@ public class RobotContainer
     {
         SmartDashboard.putBoolean("AutoShoot/Enabled", true);
         SmartDashboard.putBoolean("AutoShoot/ForceScoreEnable", false);
+        SmartDashboard.putBoolean("AutoShoot/RunCommand", false);
+        SmartDashboard.putBoolean("Test/ManualFeedMode", false);
         SmartDashboard.putBoolean("AutoIntake/Enabled", true);
         SmartDashboard.putBoolean("AutoIntake/AutoStowEnabled", true);
+        SmartDashboard.putBoolean("Drive/UseTestController", false);
+        SmartDashboard.putBoolean("ManualShooter/Enabled", false);
+        SmartDashboard.putNumber("ManualShooter/SpeedRps", 0.0);
+        SmartDashboard.putNumber("ManualShooter/HoodDeg", 0.0);
         SmartDashboard.putNumber("Test/SpindexPercent", testSpindexPercent);
         SmartDashboard.putNumber("Test/ShooterPercent", testShooterPercent);
         SmartDashboard.putNumber("Test/ShooterSetpointRPS", 0.0);
@@ -159,6 +167,36 @@ public class RobotContainer
         }
     }
 
+    public void processDashboardManualShooterRequests() {
+        if (!SmartDashboard.getBoolean("ManualShooter/Enabled", false)) {
+            return;
+        }
+        if (!DriverStation.isEnabled()) {
+            return;
+        }
+        double speedRps = SmartDashboard.getNumber("ManualShooter/SpeedRps", 0.0);
+        double hoodDeg = SmartDashboard.getNumber("ManualShooter/HoodDeg", 0.0);
+        s_shooter.setSpeed(speedRps);
+        s_hood.setAngle(hoodDeg);
+    }
+
+    public void processAutoShootCommand() {
+        if (SmartDashboard.getBoolean("Test/ManualFeedMode", false)) {
+            var scheduler = edu.wpi.first.wpilibj2.command.CommandScheduler.getInstance();
+            if (scheduler.isScheduled(autoShootCommand)) {
+                scheduler.cancel(autoShootCommand);
+            }
+            return;
+        }
+        boolean shouldRun = SmartDashboard.getBoolean("AutoShoot/RunCommand", false);
+        var scheduler = edu.wpi.first.wpilibj2.command.CommandScheduler.getInstance();
+        boolean isScheduled = scheduler.isScheduled(autoShootCommand);
+        SmartDashboard.putBoolean("AutoShoot/IsScheduled", isScheduled);
+        if (shouldRun && !isScheduled) {
+            scheduler.schedule(autoShootCommand);
+        }
+    }
+
     private void configureBindings() 
     {
         // Note that X is defined as forward according to WPILib convention,
@@ -168,13 +206,13 @@ public class RobotContainer
             // Drivetrain will execute this command periodically
             drivetrain.applyRequest
             (() ->
-                drive.withVelocityX(-driver.getLeftY() * MaxSpeed) // Drive forward with negative Y (forward)
-                    .withVelocityY(-driver.getLeftX() * MaxSpeed) // Drive left with negative X (left)
-                    .withRotationalRate(-driver.getRightX() * MaxAngularRate) // Drive counterclockwise with negative X (left)
+                drive.withVelocityX(-getDriveController().getLeftY() * MaxSpeed) // Drive forward with negative Y (forward)
+                    .withVelocityY(-getDriveController().getLeftX() * MaxSpeed) // Drive left with negative X (left)
+                    .withRotationalRate(-getDriveController().getRightX() * MaxAngularRate) // Drive counterclockwise with negative X (left)
             )
         );
 
-        //s_shooter.setDefaultCommand(autoShootCommand);
+        s_shooter.setDefaultCommand(autoShootCommand);
 
         // Idle while the robot is disabled. This ensures the configured
         // neutral mode is applied to the drive motors while disabled.
@@ -242,9 +280,8 @@ public class RobotContainer
                 r_Intake.setAngle(Constants.RightIntake.PIVOT_ANGLE_UP_STOWED);
             }
         }));
-        //driver.leftTrigger().whileTrue(autoIntakeCommand);
-
-        //driver.rightTrigger().whileTrue(); // Manual Shoot
+        driver.povUp().whileTrue(s_ballElevator.runOnce(() -> s_ballElevator.dumbSpeed()));
+        driver.povUp().onFalse(s_ballElevator.runOnce(() -> s_ballElevator.stop()));
 
         drivetrain.registerTelemetry(logger::telemeterize);
 
@@ -270,12 +307,12 @@ public class RobotContainer
                     ? Constants.LeftIntake.PIVOT_ANGLE_DOWN
                     : Constants.LeftIntake.PIVOT_ANGLE_UP_STOWED);
         }));
-        test.leftBumper().whileTrue(l_Intake.runOnce(() -> l_Intake.runFeed(1)));   // testing at 50% speed
+        test.leftBumper().whileTrue(l_Intake.runOnce(() -> l_Intake.runFeed(1)));
         test.leftBumper().whileFalse(l_Intake.runOnce(() -> l_Intake.stop()));
 
         //Spindex:
         test.povUp().onTrue(s_spindex.runOnce(() -> {
-            s_spindex.setSpeed(Constants.Spindexer.MAX_SPINDEX_SPEED_RPS/4);
+            s_spindex.setSpeed(Constants.Spindexer.MAX_SPINDEX_SPEED_RPS*.4);   // was /4
         }));
         test.povDown().onTrue(s_spindex.runOnce(() -> {
             s_spindex.stop();
@@ -289,14 +326,13 @@ public class RobotContainer
         }));
         // Test Ball Elevator
         test.povRight().onTrue(s_ballElevator.runOnce(() -> {
-            s_ballElevator.setSpeed(-129/4);  //-129 is max RPS
+            s_ballElevator.runFeed(1);
         }));
         test.povLeft().onTrue(s_ballElevator.runOnce(() -> {
             s_ballElevator.stop();
         }));
 
-        // TEST Hood
-        // TEST TURRET
+        // TEST Hood // TODO
 
         // TEST 2 Controls:
         test2.a().onTrue(s_hood.runOnce(() -> s_hood.zeroEncoder()).ignoringDisable(true));
@@ -314,6 +350,19 @@ public class RobotContainer
 
     public void printDiagnostics() 
     {
+        SmartDashboard.putBoolean("Driver/Joystick0Connected", DriverStation.isJoystickConnected(0));
+        SmartDashboard.putBoolean("Driver/Joystick1Connected", DriverStation.isJoystickConnected(1));
+        SmartDashboard.putBoolean("Driver/Joystick2Connected", DriverStation.isJoystickConnected(2));
+        SmartDashboard.putString("AutoShoot/Mode", autoShootCommand.getLastModeName());
+        SmartDashboard.putNumber("AutoShoot/TrajectoryPointCount", autoShootCommand.getLastTrajectoryPointCount());
+        SmartDashboard.putBoolean("AutoShoot/AutoEnabled", autoShootCommand.getLastAutoEnabled());
+        SmartDashboard.putBoolean("AutoShoot/ScoreEnable", autoShootCommand.getLastScoreEnabled());
+        var allianceHubCenter = FieldConstants.Hub.getCenterForAlliance(DriverStation.getAlliance());
+        var robotPose = drivetrain.getState().Pose;
+        double rangeToHubM = robotPose.getTranslation().getDistance(allianceHubCenter.toPose2d().getTranslation());
+        SmartDashboard.putNumber("RangeToHubM", rangeToHubM);
+        SmartDashboard.putNumber("RangeToHubIn", edu.wpi.first.math.util.Units.metersToInches(rangeToHubM));
+
         s_spindex.printDiagnostics();
         s_ballElevator.printDiagnostics();
         
@@ -345,5 +394,9 @@ public class RobotContainer
 
     private boolean isAutoIntakeEnabled() {
         return SmartDashboard.getBoolean("AutoIntake/Enabled", true);
+    }
+
+    private CommandXboxController getDriveController() {
+        return SmartDashboard.getBoolean("Drive/UseTestController", false) ? test : driver;
     }
 }

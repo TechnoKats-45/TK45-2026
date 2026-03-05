@@ -26,11 +26,11 @@ public class BallElevator extends SubsystemBase {
 
     private static final double STATOR_CURRENT_LIMIT_AMPS = 120.0;
     private static final double SUPPLY_CURRENT_LIMIT_AMPS = 60.0;
-    private static final double SENSOR_TO_MECHANISM_RATIO = 20.0 / 48.0;
+    private static final double SENSOR_TO_MECHANISM_RATIO = 12.0 / 48.0;
 
     private static final double SLOT0_KS = 0.0; // TODO - tune
     private static final double SLOT0_KV = 0.0; // TODO - tune
-    private static final double SLOT0_KP = 100; // TODO - tune
+    private static final double SLOT0_KP = 1; // TODO -  // wAS 10
     private static final double SLOT0_KI = 0.0; // TODO - tune
     private static final double SLOT0_KD = 0.0; // TODO - tune
 
@@ -38,10 +38,10 @@ public class BallElevator extends SubsystemBase {
     private static final double PEAK_REVERSE_VOLTS = -16.0;
 
     private static final double SPEED_TOLERANCE_RPS = 0.5;
-    private static final double MAX_ELEVATOR_SPEED_RPS = Constants.Ball_Elevator.MAX_ELEVATOR_SPEED_RPS; // TODO - tune
+    private static final double MAX_ELEVATOR_SPEED_RPS = Constants.Ball_Elevator.MAX_ELEVATOR_SPEED_RPS;
     private static final InvertedValue MOTOR_INVERTED = InvertedValue.CounterClockwise_Positive;
-    private static final double MM_CRUISE_RPS = 5.0;
-    private static final double MM_ACCEL_RPS2 = 5.0;
+    private static final double MM_CRUISE_RPS = 100;    // TODO TUNE
+    private static final double MM_ACCEL_RPS2 = 100;    // TODO TUNE
 
     private final TalonFX ballElevatorMotor;
     private final VelocityTorqueCurrentFOC velocityRequest = new VelocityTorqueCurrentFOC(0);
@@ -78,6 +78,11 @@ public class BallElevator extends SubsystemBase {
 
     public boolean isFeeding() {
         return Math.abs(currentSpeedSetpointRps) > 1e-5;
+    }
+
+    public void dumbSpeed()
+    {
+        ballElevatorMotor.set(1);
     }
 
     public void stop() {
@@ -124,7 +129,7 @@ public class BallElevator extends SubsystemBase {
         }
     }
     public void printDiagnostics() {
-        SmartDashboard.putNumber("Ball Elevator Current Speed RPS", getSpeed());
+        SmartDashboard.putNumber("Ball Elevator Velocity", getSpeed());
         SmartDashboard.putNumber("Ball Elevator Speed Setpoint RPS", currentSpeedSetpointRps);
         SmartDashboard.putBoolean("Ball Elevator Is At Speed", isAtSpeed());
         SmartDashboard.putNumber("Ball Elevator Current", ballElevatorMotor.getSupplyCurrent().getValueAsDouble());
