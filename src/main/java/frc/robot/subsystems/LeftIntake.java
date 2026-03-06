@@ -13,6 +13,7 @@ import com.ctre.phoenix6.controls.VelocityTorqueCurrentFOC;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.FeedbackSensorSourceValue;
 import com.ctre.phoenix6.signals.InvertedValue;
+import com.ctre.phoenix6.signals.NeutralModeValue;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -42,7 +43,7 @@ public class LeftIntake extends SubsystemBase
     //Roller Vars
     private static final double STATOR_CURRENT_LIMIT_AMPS_ROLLER = 120.0;
     private static final double SUPPLY_CURRENT_LIMIT_AMPS_ROLLER = 60.0;
-    private static final double MM_CRUISE_RPS_ROLLER = 100.0;
+    private static final double MM_CRUISE_RPS_ROLLER = 50.0; // 100 is max TODO change to a constant
     private static final double MM_ACCEL_RPS2_ROLLER = 100.0;
     private static final double SENSOR_TO_MECHANISM_RATIO_ROLLER = 1.0; // TODO tune
     private static final double PEAK_FORWARD_VOLTS_ROLLER = 16.0;
@@ -159,6 +160,7 @@ public class LeftIntake extends SubsystemBase
         IntakePivotConfigs.Slot0.kI = SLOT0_KI;
         IntakePivotConfigs.Slot0.kD = SLOT0_KD;
         IntakePivotConfigs.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive; // might need to tweek this
+        IntakePivotConfigs.MotorOutput.NeutralMode = NeutralModeValue.Brake;
         IntakePivotConfigs.Voltage
                 .withPeakForwardVoltage(Volts.of(PEAK_FORWARD_VOLTS_PIVOT))
                 .withPeakReverseVoltage(Volts.of(PEAK_REVERSE_VOLTS_PIVOT));
@@ -195,6 +197,7 @@ public class LeftIntake extends SubsystemBase
         IntakeSpinConfigs.Slot0.kI = SLOT1_KI;
         IntakeSpinConfigs.Slot0.kD = SLOT1_KD;
         IntakeSpinConfigs.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
+        IntakeSpinConfigs.MotorOutput.NeutralMode = NeutralModeValue.Brake;
         IntakeSpinConfigs.Voltage
                 .withPeakForwardVoltage(Volts.of(PEAK_FORWARD_VOLTS_ROLLER))
                 .withPeakReverseVoltage(Volts.of(PEAK_REVERSE_VOLTS_ROLLER));

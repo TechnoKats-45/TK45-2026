@@ -19,6 +19,7 @@ import edu.wpi.first.wpilibj.smartdashboard.MechanismLigament2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.util.Color;
 import edu.wpi.first.wpilibj.util.Color8Bit;
+import frc.robot.FieldConstants;
 
 public class Telemetry {
     private final double MaxSpeed;
@@ -106,9 +107,10 @@ public class Telemetry {
         /* Telemeterize the pose to a Field2d */
         fieldTypePub.set("Field2d");
 
-        m_poseArray[0] = state.Pose.getX();
-        m_poseArray[1] = state.Pose.getY();
-        m_poseArray[2] = state.Pose.getRotation().getDegrees();
+        Pose2d displayedPose = FieldConstants.rotateBluePoseIfNecessary(state.Pose);
+        m_poseArray[0] = displayedPose.getX();
+        m_poseArray[1] = displayedPose.getY();
+        m_poseArray[2] = displayedPose.getRotation().getDegrees();
         fieldPub.set(m_poseArray);
 
         /* Telemeterize each module state to a Mechanism2d */

@@ -80,7 +80,7 @@ public class BallElevator extends SubsystemBase {
         return Math.abs(currentSpeedSetpointRps) > 1e-5;
     }
 
-    public void dumbSpeed()
+    public void dumbSpeed(double percent)
     {
         ballElevatorMotor.set(1);
     }

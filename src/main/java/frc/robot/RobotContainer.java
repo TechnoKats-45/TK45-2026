@@ -7,25 +7,23 @@
 package frc.robot;
 
 import static edu.wpi.first.units.Units.*;
-import edu.wpi.first.math.MathUtil;
 import com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType;
 import com.ctre.phoenix6.swerve.SwerveRequest;
 import com.pathplanner.lib.auto.AutoBuilder;
-import com.pathplanner.lib.auto.NamedCommands;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
-import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj.DriverStation;
-import edu.wpi.first.wpilibj.RobotState;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
+import edu.wpi.first.wpilibj2.command.InstantCommand;
+import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
+import edu.wpi.first.wpilibj2.command.WaitCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
-import frc.robot.commands.AutoIntake;
-import frc.robot.commands.AutoShoot;
+import frc.robot.commands.AutoAim;
+import frc.robot.commands.AutoFeed;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.*;
 import frc.robot.subsystems.ShooterSystems.BallElevator;
@@ -33,6 +31,10 @@ import frc.robot.subsystems.ShooterSystems.Hood;
 import frc.robot.subsystems.ShooterSystems.Shooter;
 import frc.robot.subsystems.ShooterSystems.ShotCalculator;
 import frc.robot.subsystems.ShooterSystems.Turret;
+import com.pathplanner.lib.auto.NamedCommands;
+import com.pathplanner.lib.events.EventTrigger;
+
+
 public class RobotContainer 
 {
     private double MaxSpeed = 1.0 * TunerConstants.kSpeedAt12Volts.in(MetersPerSecond); // kSpeedAt12Volts desired top speed, change multiplier to change max speed
@@ -42,7 +44,6 @@ public class RobotContainer
     private final SwerveRequest.FieldCentric drive = new SwerveRequest.FieldCentric()
             .withDeadband(MaxSpeed * 0.1).withRotationalDeadband(MaxAngularRate * 0.1) // Add a 10% deadband
             .withDriveRequestType(DriveRequestType.OpenLoopVoltage); // Use open-loop control for drive motors
-    private final SwerveRequest.PointWheelsAt point = new SwerveRequest.PointWheelsAt();
 
     private final Telemetry logger = new Telemetry(MaxSpeed);
 
@@ -55,10 +56,13 @@ public class RobotContainer
     private static final double TEST_SHOOTER_STEP = 0.1;
     private static final double TEST_SHOOTER_MAX_SPEED_RPS = 40.0;
     private static final double INTAKE_UP_TOLERANCE_ROTATIONS = 0.02;
+    private static final double INTAKE_SPIN_ENABLE_TOLERANCE_ROTATIONS = 0.08;
     private double testSpindexPercent = 0.0;
     private double testShooterPercent = 0.0;
     private boolean rightIntakePivotDown = false;
     private boolean leftIntakePivotDown = false;
+    private boolean prevOperatorA = false;
+    private boolean prevOperatorY = false;
 
     public final Drivetrain drivetrain = TunerConstants.createDrivetrain();
     public final Climber s_climber = new Climber();
@@ -71,49 +75,23 @@ public class RobotContainer
     public final RightIntake r_Intake = new RightIntake();
     public final LeftIntake l_Intake = new LeftIntake();
     public final Vision s_vision = new Vision(drivetrain);
-
-    private final AutoShoot autoShootCommand = new AutoShoot(
+    private final AutoAim autoAimCommand = new AutoAim(
             drivetrain,
             s_shooter,
             s_hood,
             s_turret,
-            s_spindex,
-            s_ballElevator,
-            s_shotCalculator,
-            () -> DriverStation.isJoystickConnected(0)
-                    && SmartDashboard.getBoolean("AutoShoot/Enabled", true)
-                    && !RobotState.isTest(),
-            () -> 
-            {
-                if (RobotState.isTest()) {
-                    return false;
-                }
-                // Allow forcing score-enable without a physical LT input.
-                if (SmartDashboard.getBoolean("AutoShoot/ForceScoreEnable", false)) {
-                    return true;
-                }
-                // If operator controller is not connected, allow scoring by default.
-                if (!DriverStation.isJoystickConnected(1)) {
-                    return true;
-                }
-                // Match inverted LT behavior: score-enable while LT is NOT held.
-                return operator.getLeftTriggerAxis() <= 0.5;
-            }
-    );
-    /*private final AutoIntake autoIntakeCommand = new AutoIntake(
-            drivetrain,
-            l_Intake,
-            r_Intake);
-            */
+            s_shotCalculator);
+    private final AutoFeed autoFeedCommand = new AutoFeed(s_spindex, s_ballElevator);
     
     private final SendableChooser<Command> autoChooser; 
 
     public RobotContainer() 
     {
-        SmartDashboard.putBoolean("AutoShoot/Enabled", true);
-        SmartDashboard.putBoolean("AutoShoot/ForceScoreEnable", false);
-        SmartDashboard.putBoolean("AutoShoot/RunCommand", false);
-        SmartDashboard.putBoolean("Test/ManualFeedMode", false);
+        registerNamedCommands();
+
+        SmartDashboard.putBoolean("AutoAim/Enabled", true);
+        SmartDashboard.putBoolean("AutoAim/RunCommand", false);
+        SmartDashboard.putBoolean("AutoAim/UsePassingTarget", false);
         SmartDashboard.putBoolean("AutoIntake/Enabled", true);
         SmartDashboard.putBoolean("AutoIntake/AutoStowEnabled", true);
         SmartDashboard.putBoolean("Drive/UseTestController", false);
@@ -123,6 +101,12 @@ public class RobotContainer
         SmartDashboard.putNumber("Test/SpindexPercent", testSpindexPercent);
         SmartDashboard.putNumber("Test/ShooterPercent", testShooterPercent);
         SmartDashboard.putNumber("Test/ShooterSetpointRPS", 0.0);
+
+        l_Intake.setAngle(Constants.LeftIntake.PIVOT_ANGLE_UP_STOWED);
+        r_Intake.setAngle(Constants.RightIntake.PIVOT_ANGLE_UP_STOWED);
+        l_Intake.stop();
+        r_Intake.stop();
+
         configureBindings();
         configureDashboardZeroToggles();
 
@@ -180,25 +164,32 @@ public class RobotContainer
         s_hood.setAngle(hoodDeg);
     }
 
-    public void processAutoShootCommand() {
-        if (SmartDashboard.getBoolean("Test/ManualFeedMode", false)) {
-            var scheduler = edu.wpi.first.wpilibj2.command.CommandScheduler.getInstance();
-            if (scheduler.isScheduled(autoShootCommand)) {
-                scheduler.cancel(autoShootCommand);
-            }
-            return;
-        }
-        boolean shouldRun = SmartDashboard.getBoolean("AutoShoot/RunCommand", false);
-        var scheduler = edu.wpi.first.wpilibj2.command.CommandScheduler.getInstance();
-        boolean isScheduled = scheduler.isScheduled(autoShootCommand);
-        SmartDashboard.putBoolean("AutoShoot/IsScheduled", isScheduled);
-        if (shouldRun && !isScheduled) {
-            scheduler.schedule(autoShootCommand);
-        }
+    public void stowIntakesAndStop() {
+        l_Intake.setAngle(Constants.LeftIntake.PIVOT_ANGLE_UP_STOWED);
+        r_Intake.setAngle(Constants.RightIntake.PIVOT_ANGLE_UP_STOWED);
+        l_Intake.stop();
+        r_Intake.stop();
+    }
+
+    public void registerNamedCommands()
+    {
+        NamedCommands.registerCommand
+        (
+            "Fire8Balls",   // TODO FIX THIS
+            new SequentialCommandGroup(
+                new InstantCommand(() -> s_shooter.setSpeed(Constants.Shooter.MAX_SPEED_RPS)),
+                new WaitCommand(1), // get shooter up to speed
+                new InstantCommand(()->s_ballElevator.runFeed(INTAKE_SPIN_ENABLE_TOLERANCE_ROTATIONS), s_ballElevator),
+                new InstantCommand(() -> s_spindex.setSpeed(Constants.Spindexer.MAX_SPINDEX_SPEED_RPS * 0.4)),
+                new InstantCommand(() -> s_shooter.stop())
+            )
+        );
     }
 
     private void configureBindings() 
     {
+        drivetrain.registerTelemetry(logger::telemeterize);
+
         // Note that X is defined as forward according to WPILib convention,
         // and Y is defined as to the left according to WPILib convention.
         drivetrain.setDefaultCommand
@@ -212,8 +203,6 @@ public class RobotContainer
             )
         );
 
-        s_shooter.setDefaultCommand(autoShootCommand);
-
         // Idle while the robot is disabled. This ensures the configured
         // neutral mode is applied to the drive motors while disabled.
         final var idle = new SwerveRequest.Idle();
@@ -221,9 +210,7 @@ public class RobotContainer
             drivetrain.applyRequest(() -> idle).ignoringDisable(true)
         );
 
-        driver.a().whileTrue(drivetrain.applyRequest(() ->
-            point.withModuleDirection(new Rotation2d(-driver.getLeftY(), -driver.getLeftX()))
-        ));
+        driver.a().onTrue(s_vision.runOnce(() -> s_vision.resetPoseFromVision()));
         driver.b().onTrue(drivetrain.runOnce(drivetrain::seedFieldCentric)); // Reset field centric heading to 0
 
         // Run SysId routines when holding back/start and X/Y.
@@ -239,13 +226,21 @@ public class RobotContainer
                 r_Intake.stop();
                 if (isRightIntakeUp()) {
                     l_Intake.setAngle(Constants.LeftIntake.PIVOT_ANGLE_DOWN);
-                    l_Intake.runFeed(Constants.LeftIntake.INTAKE_SPEED);
+                    if (isLeftIntakeDownEnoughToSpin()) {
+                        l_Intake.runFeed(Constants.LeftIntake.INTAKE_SPEED);
+                    } else {
+                        l_Intake.stop();
+                    }
                 } else {
                     l_Intake.stop();
                 }
             } else {
                 l_Intake.setAngle(Constants.LeftIntake.PIVOT_ANGLE_DOWN);
-                l_Intake.runFeed(Constants.LeftIntake.INTAKE_SPEED);
+                if (isLeftIntakeDownEnoughToSpin()) {
+                    l_Intake.runFeed(Constants.LeftIntake.INTAKE_SPEED);
+                } else {
+                    l_Intake.stop();
+                }
             }
         }, l_Intake, r_Intake);
 
@@ -255,13 +250,21 @@ public class RobotContainer
                 l_Intake.stop();
                 if (isLeftIntakeUp()) {
                     r_Intake.setAngle(Constants.RightIntake.PIVOT_ANGLE_DOWN);
-                    r_Intake.runFeed(Constants.RightIntake.INTAKE_SPEED);
+                    if (isRightIntakeDownEnoughToSpin()) {
+                        r_Intake.runFeed(Constants.RightIntake.INTAKE_SPEED);
+                    } else {
+                        r_Intake.stop();
+                    }
                 } else {
                     r_Intake.stop();
                 }
             } else {
                 r_Intake.setAngle(Constants.RightIntake.PIVOT_ANGLE_DOWN);
-                r_Intake.runFeed(Constants.RightIntake.INTAKE_SPEED);
+                if (isRightIntakeDownEnoughToSpin()) {
+                    r_Intake.runFeed(Constants.RightIntake.INTAKE_SPEED);
+                } else {
+                    r_Intake.stop();
+                }
             }
         }, l_Intake, r_Intake);
 
@@ -280,11 +283,16 @@ public class RobotContainer
                 r_Intake.setAngle(Constants.RightIntake.PIVOT_ANGLE_UP_STOWED);
             }
         }));
-        driver.povUp().whileTrue(s_ballElevator.runOnce(() -> s_ballElevator.dumbSpeed()));
+        driver.povUp().whileTrue(s_ballElevator.runOnce(() -> s_ballElevator.dumbSpeed(1)));
         driver.povUp().onFalse(s_ballElevator.runOnce(() -> s_ballElevator.stop()));
 
-        drivetrain.registerTelemetry(logger::telemeterize);
-
+        driver.leftTrigger().whileTrue(autoAimCommand);
+        driver.rightTrigger().whileTrue(autoFeedCommand);
+        operator.povUp().whileTrue(s_climber.run(() -> s_climber.setManualPercent(1)));
+        operator.povUp().onFalse(s_climber.runOnce(s_climber::stop));
+        operator.povDown().whileTrue(s_climber.run(() -> s_climber.setManualPercent(-1)));  // TODO
+        operator.povDown().onFalse(s_climber.runOnce(s_climber::stop)); // TODO
+        /*
         //TEST:
         //CLimber:
         test.a().onTrue(s_climber.runOnce(() -> s_climber.setHeightInches(Constants.Climber.MIN_HEIGHT_INCHES))); // a goes to minimum climber height
@@ -331,16 +339,7 @@ public class RobotContainer
         test.povLeft().onTrue(s_ballElevator.runOnce(() -> {
             s_ballElevator.stop();
         }));
-
-        // TEST Hood // TODO
-
-        // TEST 2 Controls:
-        test2.a().onTrue(s_hood.runOnce(() -> s_hood.zeroEncoder()).ignoringDisable(true));
-        test2.b().onTrue(s_turret.runOnce(() -> s_turret.zeroEncoder()).ignoringDisable(true));
-        test2.povUp().onTrue(l_Intake.runOnce(() -> l_Intake.zeroEncoder()).ignoringDisable(true));
-        test2.povDown().onTrue(r_Intake.runOnce(() -> r_Intake.zeroEncoder()).ignoringDisable(true));
-        test2.y().onTrue(s_climber.runOnce(() -> s_climber.zeroEncoder()).ignoringDisable(true));
-        test2.x().onTrue(s_turret.runOnce(() -> s_turret.zeroEncoder()).ignoringDisable(true));
+        */
     }
 
     public Command getAutonomousCommand() 
@@ -350,13 +349,8 @@ public class RobotContainer
 
     public void printDiagnostics() 
     {
-        SmartDashboard.putBoolean("Driver/Joystick0Connected", DriverStation.isJoystickConnected(0));
-        SmartDashboard.putBoolean("Driver/Joystick1Connected", DriverStation.isJoystickConnected(1));
-        SmartDashboard.putBoolean("Driver/Joystick2Connected", DriverStation.isJoystickConnected(2));
-        SmartDashboard.putString("AutoShoot/Mode", autoShootCommand.getLastModeName());
-        SmartDashboard.putNumber("AutoShoot/TrajectoryPointCount", autoShootCommand.getLastTrajectoryPointCount());
-        SmartDashboard.putBoolean("AutoShoot/AutoEnabled", autoShootCommand.getLastAutoEnabled());
-        SmartDashboard.putBoolean("AutoShoot/ScoreEnable", autoShootCommand.getLastScoreEnabled());
+        SmartDashboard.putString("AutoAim/TargetMode", autoAimCommand.getLastTargetMode());
+        SmartDashboard.putBoolean("AutoAim/AutoEnabled", isAutoAimEnabled());
         var allianceHubCenter = FieldConstants.Hub.getCenterForAlliance(DriverStation.getAlliance());
         var robotPose = drivetrain.getState().Pose;
         double rangeToHubM = robotPose.getTranslation().getDistance(allianceHubCenter.toPose2d().getTranslation());
@@ -388,6 +382,16 @@ public class RobotContainer
                 <= INTAKE_UP_TOLERANCE_ROTATIONS;
     }
 
+    private boolean isLeftIntakeDownEnoughToSpin() {
+        return Math.abs(l_Intake.getAngle() - Constants.LeftIntake.PIVOT_ANGLE_DOWN)
+                <= INTAKE_SPIN_ENABLE_TOLERANCE_ROTATIONS;
+    }
+
+    private boolean isRightIntakeDownEnoughToSpin() {
+        return Math.abs(r_Intake.getAngle() - Constants.RightIntake.PIVOT_ANGLE_DOWN)
+                <= INTAKE_SPIN_ENABLE_TOLERANCE_ROTATIONS;
+    }
+
     private boolean isAutoIntakeAutoStowEnabled() {
         return SmartDashboard.getBoolean("AutoIntake/AutoStowEnabled", true);
     }
@@ -396,7 +400,31 @@ public class RobotContainer
         return SmartDashboard.getBoolean("AutoIntake/Enabled", true);
     }
 
+    private boolean isAutoAimEnabled() {
+        return SmartDashboard.getBoolean("AutoAim/Enabled", true);
+    }
+
     private CommandXboxController getDriveController() {
         return SmartDashboard.getBoolean("Drive/UseTestController", false) ? test : driver;
+    }
+
+    /**
+     * Returns +1 on operator A press edge, -1 on operator Y press edge, else 0.
+     */
+    public int consumeClimberServoNudgeDirection() {
+        boolean aNow = operator.getHID().getAButton();
+        boolean yNow = operator.getHID().getYButton();
+        boolean aPressed = aNow && !prevOperatorA;
+        boolean yPressed = yNow && !prevOperatorY;
+        prevOperatorA = aNow;
+        prevOperatorY = yNow;
+
+        if (aPressed && !yPressed) {
+            return 1;
+        }
+        if (yPressed && !aPressed) {
+            return -1;
+        }
+        return 0;
     }
 }

@@ -77,14 +77,13 @@ public class Constants
         public record ShotProfile(double hoodDeg, double speedRps) {}
         public static final TreeMap<Double, ShotProfile> DISTANCE_ANGLE_SPEED = new TreeMap<>();
         static {
-            DISTANCE_ANGLE_SPEED.put(60.0, new ShotProfile(22.5, 51.5));// Infront of Hub (not touching)
-            DISTANCE_ANGLE_SPEED.put(70.0, new ShotProfile(22.5, 51.5));// Mid 
-            DISTANCE_ANGLE_SPEED.put(120.0, new ShotProfile(22.5, 61.7)); // Back Against Tower
-            DISTANCE_ANGLE_SPEED.put(150.0, new ShotProfile(22.5, 61.7));// Next to Tower
-            DISTANCE_ANGLE_SPEED.put(170.0, new ShotProfile(22.5, 75.2));//Against Human Station
+            DISTANCE_ANGLE_SPEED.put(70.0, new ShotProfile(22.5, 51.2));// Mid 
+            DISTANCE_ANGLE_SPEED.put(120.0, new ShotProfile(22.5, 61.02)); // Back Against Tower
+            DISTANCE_ANGLE_SPEED.put(150.0, new ShotProfile(22.5, 70.92));// Next to Tower
+           // DISTANCE_ANGLE_SPEED.put(170.0, new ShotProfile(22.5, 75.2-10));//Against Human Station
             DISTANCE_ANGLE_SPEED.put(215.0, new ShotProfile(22.5, 89.0));// Corner
-            DISTANCE_ANGLE_SPEED.put(110.0, new ShotProfile(22.5, 72.5));//Bump 
-            DISTANCE_ANGLE_SPEED.put(145.0, new ShotProfile(22.5, 85.5));//Trench 
+           // DISTANCE_ANGLE_SPEED.put(110.0, new ShotProfile(22.5, 72.5-10));//Bump 
+           // DISTANCE_ANGLE_SPEED.put(145.0, new ShotProfile(22.5, 85.5-10));//Trench 
         }
 
         public static final double MAX_SPEED_RPS = 120.0;

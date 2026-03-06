@@ -60,5 +60,100 @@ public class FieldConstants {
         public static Pose3d getCenterForAlliance(Optional<Alliance> alliance) {
             return alliance.orElse(Alliance.Blue) == Alliance.Red ? RED_CENTER : BLUE_CENTER;
         }
+
+        public static Pose3d getCenterForAllianceOrNearest(Optional<Alliance> alliance, Pose2d robotPose) {
+            if (alliance.isPresent()) {
+                return getCenterForAlliance(alliance);
+            }
+            double blueDist = robotPose.getTranslation().getDistance(BLUE_CENTER.toPose2d().getTranslation());
+            double redDist = robotPose.getTranslation().getDistance(RED_CENTER.toPose2d().getTranslation());
+            return redDist < blueDist ? RED_CENTER : BLUE_CENTER;
+        }
+    }
+
+    public static final class Passing {
+        private static final double LATERAL_OFFSET_METERS = Units.feetToMeters(6);
+
+        public static final Pose3d BLUE_LEFT_TARGET = new Pose3d(
+                Hub.BLUE_CENTER.getX(),
+                Hub.BLUE_CENTER.getY() + LATERAL_OFFSET_METERS,
+                Hub.BLUE_CENTER.getZ(),
+                Rotation3d.kZero);
+        public static final Pose3d BLUE_RIGHT_TARGET = new Pose3d(
+                Hub.BLUE_CENTER.getX(),
+                Hub.BLUE_CENTER.getY() - LATERAL_OFFSET_METERS,
+                Hub.BLUE_CENTER.getZ(),
+                Rotation3d.kZero);
+
+        public static final Pose3d RED_LEFT_TARGET = new Pose3d(
+                FIELD_LENGTH - BLUE_LEFT_TARGET.getX(),
+                FIELD_WIDTH - BLUE_LEFT_TARGET.getY(),
+                BLUE_LEFT_TARGET.getZ(),
+                Rotation3d.kZero);
+        public static final Pose3d RED_RIGHT_TARGET = new Pose3d(
+                FIELD_LENGTH - BLUE_RIGHT_TARGET.getX(),
+                FIELD_WIDTH - BLUE_RIGHT_TARGET.getY(),
+                BLUE_RIGHT_TARGET.getZ(),
+                Rotation3d.kZero);
+
+        private static final Pose3d[] BLUE_TARGETS = new Pose3d[] { BLUE_LEFT_TARGET, BLUE_RIGHT_TARGET };
+        private static final Pose3d[] RED_TARGETS = new Pose3d[] { RED_LEFT_TARGET, RED_RIGHT_TARGET };
+
+        public static Pose3d[] getTargetsForAlliance(Optional<Alliance> alliance) {
+            return alliance.orElse(Alliance.Blue) == Alliance.Red ? RED_TARGETS : BLUE_TARGETS;
+        }
+
+        public static Pose3d getClosestForAlliance(Pose2d robotPose, Optional<Alliance> alliance) {
+            Pose3d[] targets = getTargetsForAlliance(alliance);
+            Pose3d closest = targets[0];
+            double closestDistance = robotPose.getTranslation().getDistance(closest.toPose2d().getTranslation());
+
+            for (int i = 1; i < targets.length; i++) {
+                Pose3d candidate = targets[i];
+                double candidateDistance = robotPose.getTranslation().getDistance(candidate.toPose2d().getTranslation());
+                if (candidateDistance < closestDistance) {
+                    closest = candidate;
+                    closestDistance = candidateDistance;
+                }
+            }
+            return closest;
+        }
+
+        public static Pose3d getClosestForAllianceOrNearest(Pose2d robotPose, Optional<Alliance> alliance) {
+            if (alliance.isPresent()) {
+                return getClosestForAlliance(robotPose, alliance);
+            }
+            Pose3d[] allTargets = new Pose3d[] {
+                    BLUE_LEFT_TARGET, BLUE_RIGHT_TARGET, RED_LEFT_TARGET, RED_RIGHT_TARGET
+            };
+            Pose3d closest = allTargets[0];
+            double closestDistance = robotPose.getTranslation().getDistance(closest.toPose2d().getTranslation());
+            for (int i = 1; i < allTargets.length; i++) {
+                Pose3d candidate = allTargets[i];
+                double candidateDistance = robotPose.getTranslation().getDistance(candidate.toPose2d().getTranslation());
+                if (candidateDistance < closestDistance) {
+                    closest = candidate;
+                    closestDistance = candidateDistance;
+                }
+            }
+            return closest;
+        }
+    }
+
+    public static final class ShotZones {
+        public static boolean isPastAllianceHub(Pose2d robotPose, Optional<Alliance> alliance) {
+            if (alliance.orElse(Alliance.Blue) == Alliance.Red) {
+                return robotPose.getX() < Hub.RED_CENTER.getX();
+            }
+            return robotPose.getX() > Hub.BLUE_CENTER.getX();
+        }
+
+        public static boolean isInPassingZone(Pose2d robotPose, Optional<Alliance> alliance) {
+            return isPastAllianceHub(robotPose, alliance);
+        }
+
+        public static boolean isInScoringZone(Pose2d robotPose, Optional<Alliance> alliance) {
+            return !isPastAllianceHub(robotPose, alliance);
+        }
     }
 }

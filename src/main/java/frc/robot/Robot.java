@@ -15,7 +15,11 @@ import edu.wpi.first.wpilibj2.command.CommandScheduler;
 public class Robot extends TimedRobot 
 {
     private PWM pwm;
-    private static final int PULSE_WIDTH_US = 2500;
+    private static final int SERVO_MIN_US = 1000;
+    private static final int SERVO_MAX_US = 2000;
+    private static final int SERVO_CENTER_US = 1500;
+    private static final int SERVO_NUDGE_US = 25;
+    private int servoPulseUs = SERVO_CENTER_US;
 
     private Command m_autonomousCommand;
 
@@ -47,6 +51,7 @@ public class Robot extends TimedRobot
         );
 
         pwm.setPeriodMultiplier(PWM.PeriodMultiplier.k1X);
+        pwm.setPulseTimeMicroseconds(servoPulseUs);
     }
 
     @Override
@@ -56,7 +61,6 @@ public class Robot extends TimedRobot
         CommandScheduler.getInstance().run(); 
         m_robotContainer.processDashboardZeroRequests();
         m_robotContainer.processDashboardManualShooterRequests();
-        m_robotContainer.processAutoShootCommand();
         m_robotContainer.printDiagnostics();
     }
 
@@ -66,7 +70,7 @@ public class Robot extends TimedRobot
     @Override
     public void disabledPeriodic() 
     {
-        pwm.setPulseTimeMicroseconds(PULSE_WIDTH_US);
+        pwm.setPulseTimeMicroseconds(servoPulseUs);
     }
 
     @Override
@@ -75,6 +79,7 @@ public class Robot extends TimedRobot
     @Override
     public void autonomousInit() 
     {
+        m_robotContainer.stowIntakesAndStop();
         m_autonomousCommand = m_robotContainer.getAutonomousCommand();
 
         if (m_autonomousCommand != null) 
@@ -92,6 +97,7 @@ public class Robot extends TimedRobot
     @Override
     public void teleopInit() 
     {
+        m_robotContainer.stowIntakesAndStop();
         if (m_autonomousCommand != null) 
         {
             CommandScheduler.getInstance().cancel(m_autonomousCommand);
@@ -99,7 +105,13 @@ public class Robot extends TimedRobot
     }
 
     @Override
-    public void teleopPeriodic() {}
+    public void teleopPeriodic() {
+        int direction = m_robotContainer.consumeClimberServoNudgeDirection();
+        if (direction != 0) {
+            servoPulseUs = Math.max(SERVO_MIN_US, Math.min(SERVO_MAX_US, servoPulseUs + direction * SERVO_NUDGE_US));
+            pwm.setPulseTimeMicroseconds(servoPulseUs);
+        }
+    }
 
     @Override
     public void teleopExit() {}

@@ -62,6 +62,10 @@ public class Climber extends SubsystemBase
         climber_motor.stopMotor();
     }
 
+    public void setManualPercent(double percentOutput) {
+        climber_motor.set(percentOutput);
+    }
+
     public double getHeightInches()
     {
         return climber_motor.getPosition().getValueAsDouble();
