@@ -7,16 +7,20 @@
 package frc.robot;
 
 import static edu.wpi.first.units.Units.*;
+import java.util.ArrayList;
+import java.util.List;
 import com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType;
 import com.ctre.phoenix6.swerve.SwerveRequest;
 import com.pathplanner.lib.auto.AutoBuilder;
+import edu.wpi.first.hal.util.AllocationException;
+import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
-import edu.wpi.first.wpilibj2.command.InstantCommand;
+import edu.wpi.first.wpilibj2.command.ParallelCommandGroup;
+import edu.wpi.first.wpilibj2.command.ParallelDeadlineGroup;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
@@ -32,7 +36,6 @@ import frc.robot.subsystems.ShooterSystems.Shooter;
 import frc.robot.subsystems.ShooterSystems.ShotCalculator;
 import frc.robot.subsystems.ShooterSystems.Turret;
 import com.pathplanner.lib.auto.NamedCommands;
-import com.pathplanner.lib.events.EventTrigger;
 
 
 public class RobotContainer 
@@ -52,6 +55,10 @@ public class RobotContainer
     private final CommandXboxController test = new CommandXboxController(2);        // Test controller
     private final CommandXboxController test2 = new CommandXboxController(3);       // Second test controller for testing subsystems with more complex controls (e.g. shooter)
 
+    private static final int[] BUTTON_BOARD_DIO_CHANNELS = new int[] {
+            0, 1, 2, 3, 4, 5, 6, 7, 8, 9
+    };
+
     private static final double TEST_SPINDEX_STEP = 0.1;
     private static final double TEST_SHOOTER_STEP = 0.1;
     private static final double TEST_SHOOTER_MAX_SPEED_RPS = 40.0;
@@ -63,6 +70,9 @@ public class RobotContainer
     private boolean leftIntakePivotDown = false;
     private boolean prevOperatorA = false;
     private boolean prevOperatorY = false;
+    private boolean prevDio0Pressed = false;
+    private boolean intakeBrakeModeEnabled = true;
+    private final List<DigitalInput> buttonBoardInputs = new ArrayList<>();
 
     public final Drivetrain drivetrain = TunerConstants.createDrivetrain();
     public final Climber s_climber = new Climber();
@@ -87,6 +97,7 @@ public class RobotContainer
 
     public RobotContainer() 
     {
+        initializeButtonBoardInputs();
         registerNamedCommands();
 
         SmartDashboard.putBoolean("AutoAim/Enabled", true);
@@ -101,6 +112,7 @@ public class RobotContainer
         SmartDashboard.putNumber("Test/SpindexPercent", testSpindexPercent);
         SmartDashboard.putNumber("Test/ShooterPercent", testShooterPercent);
         SmartDashboard.putNumber("Test/ShooterSetpointRPS", 0.0);
+        SmartDashboard.putString("Intake/NeutralMode", "Brake");
 
         l_Intake.setAngle(Constants.LeftIntake.PIVOT_ANGLE_UP_STOWED);
         r_Intake.setAngle(Constants.RightIntake.PIVOT_ANGLE_UP_STOWED);
@@ -118,6 +130,29 @@ public class RobotContainer
         }
         
         SmartDashboard.putData("Auto Mode", autoChooser); 
+    }
+
+    public void processButtonBoardModeToggle() {
+        boolean dio0Pressed = isButtonPressed(0);
+        if (DriverStation.isDisabled() && dio0Pressed && !prevDio0Pressed) {
+            intakeBrakeModeEnabled = !intakeBrakeModeEnabled;
+            l_Intake.setBrakeMode(intakeBrakeModeEnabled);
+            r_Intake.setBrakeMode(intakeBrakeModeEnabled);
+        }
+        prevDio0Pressed = dio0Pressed;
+        SmartDashboard.putString("Intake/NeutralMode", intakeBrakeModeEnabled ? "Brake" : "Coast");
+    }
+
+    private void initializeButtonBoardInputs() {
+        for (int channel : BUTTON_BOARD_DIO_CHANNELS) {
+            try {
+                buttonBoardInputs.add(new DigitalInput(channel));
+                SmartDashboard.putBoolean("ButtonBoard/DIO" + channel + "/Allocated", true);
+            } catch (AllocationException ex) {
+                buttonBoardInputs.add(null);
+                SmartDashboard.putBoolean("ButtonBoard/DIO" + channel + "/Allocated", false);
+            }
+        }
     }
 
     private void configureDashboardZeroToggles() {
@@ -173,15 +208,53 @@ public class RobotContainer
 
     public void registerNamedCommands()
     {
-        NamedCommands.registerCommand
-        (
-            "Fire8Balls",   // TODO FIX THIS
-            new SequentialCommandGroup(
-                new InstantCommand(() -> s_shooter.setSpeed(Constants.Shooter.MAX_SPEED_RPS)),
-                new WaitCommand(1), // get shooter up to speed
-                new InstantCommand(()->s_ballElevator.runFeed(INTAKE_SPIN_ENABLE_TOLERANCE_ROTATIONS), s_ballElevator),
-                new InstantCommand(() -> s_spindex.setSpeed(Constants.Spindexer.MAX_SPINDEX_SPEED_RPS * 0.4)),
-                new InstantCommand(() -> s_shooter.stop())
+        NamedCommands.registerCommand(
+            "Fire8Balls",
+            new ParallelDeadlineGroup(
+                new SequentialCommandGroup(
+                    new WaitCommand(1),
+                    Commands.startEnd(
+                            () -> {
+                                s_ballElevator.dumbSpeed(1);
+                                s_spindex.runFeed(1);
+                            },
+                            () -> {
+                                s_ballElevator.stop();
+                                s_spindex.stop();
+                            },
+                            s_ballElevator,
+                            s_spindex)
+                            .withTimeout(4)
+                ),
+                new AutoAim(drivetrain, s_shooter, s_hood, s_turret, s_shotCalculator)
+            )
+        );
+
+        NamedCommands.registerCommand(
+            "IntakeAndPass",
+            new ParallelCommandGroup(
+                new AutoAim(drivetrain, s_shooter, s_hood, s_turret, s_shotCalculator),
+                Commands.startEnd(
+                    () -> {
+                        SmartDashboard.putBoolean("AutoAim/UsePassingTarget", true);
+                        l_Intake.setAngle(Constants.LeftIntake.PIVOT_ANGLE_UP_STOWED);
+                        l_Intake.stop();
+                        r_Intake.setAngle(Constants.RightIntake.PIVOT_ANGLE_DOWN);
+                        r_Intake.runFeed(Constants.RightIntake.INTAKE_SPEED);
+                        s_ballElevator.dumbSpeed(1);
+                        s_spindex.runFeed(1);
+                    },
+                    () -> {
+                        r_Intake.stop();
+                        r_Intake.setAngle(Constants.RightIntake.PIVOT_ANGLE_UP_STOWED);
+                        s_ballElevator.stop();
+                        s_spindex.stop();
+                        SmartDashboard.putBoolean("AutoAim/UsePassingTarget", false);
+                    },
+                    l_Intake,
+                    r_Intake,
+                    s_ballElevator,
+                    s_spindex)
             )
         );
     }
@@ -289,6 +362,10 @@ public class RobotContainer
         driver.leftTrigger().whileTrue(autoAimCommand);
         driver.rightTrigger().whileTrue(autoFeedCommand);
         operator.povUp().whileTrue(s_climber.run(() -> s_climber.setManualPercent(1)));
+
+        operator.leftTrigger().whileTrue(autoAimCommand);
+        operator.rightTrigger().whileTrue(autoFeedCommand);
+
         operator.povUp().onFalse(s_climber.runOnce(s_climber::stop));
         operator.povDown().whileTrue(s_climber.run(() -> s_climber.setManualPercent(-1)));  // TODO
         operator.povDown().onFalse(s_climber.runOnce(s_climber::stop)); // TODO
@@ -349,6 +426,18 @@ public class RobotContainer
 
     public void printDiagnostics() 
     {
+        for (int i = 0; i < BUTTON_BOARD_DIO_CHANNELS.length; i++) {
+            int channel = BUTTON_BOARD_DIO_CHANNELS[i];
+            DigitalInput input = buttonBoardInputs.get(i);
+            if (input == null) {
+                SmartDashboard.putString("ButtonBoard/DIO" + channel + "/State", "Unavailable");
+                continue;
+            }
+            boolean raw = input.get();
+            SmartDashboard.putBoolean("ButtonBoard/DIO" + channel + "/Raw", raw);
+            SmartDashboard.putBoolean("ButtonBoard/DIO" + channel + "/Pressed", !raw);
+            SmartDashboard.putString("ButtonBoard/DIO" + channel + "/State", !raw ? "Pressed" : "Released");
+        }
         SmartDashboard.putString("AutoAim/TargetMode", autoAimCommand.getLastTargetMode());
         SmartDashboard.putBoolean("AutoAim/AutoEnabled", isAutoAimEnabled());
         var allianceHubCenter = FieldConstants.Hub.getCenterForAlliance(DriverStation.getAlliance());
@@ -402,6 +491,17 @@ public class RobotContainer
 
     private boolean isAutoAimEnabled() {
         return SmartDashboard.getBoolean("AutoAim/Enabled", true);
+    }
+
+    private boolean isButtonPressed(int channel) {
+        for (int i = 0; i < BUTTON_BOARD_DIO_CHANNELS.length; i++) {
+            if (BUTTON_BOARD_DIO_CHANNELS[i] != channel) {
+                continue;
+            }
+            DigitalInput input = buttonBoardInputs.get(i);
+            return input != null && !input.get();
+        }
+        return false;
     }
 
     private CommandXboxController getDriveController() {

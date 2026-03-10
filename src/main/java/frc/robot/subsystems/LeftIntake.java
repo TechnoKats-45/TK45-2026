@@ -138,6 +138,12 @@ public class LeftIntake extends SubsystemBase
         intake_roller_motor.stopMotor();
     }
 
+    public void setBrakeMode(boolean enableBrake) {
+        NeutralModeValue mode = enableBrake ? NeutralModeValue.Brake : NeutralModeValue.Coast;
+        intake_pivot_motor.setNeutralMode(mode);
+        intake_roller_motor.setNeutralMode(mode);
+    }
+
 
     //TODO Change vars to to PIVOT VARS
     private void configurePivotMotor()

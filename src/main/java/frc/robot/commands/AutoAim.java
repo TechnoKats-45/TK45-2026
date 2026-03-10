@@ -66,7 +66,14 @@ public class AutoAim extends Command {
         }
 
         shooter.setSpeed(profile.speedRps());
-        hood.setAngle(profile.hoodDeg());
+        double hoodSetpointDeg = profile.hoodDeg();
+        if (inPassingZone) 
+        {
+            hoodSetpointDeg += 15.0;
+        }
+        hood.setAngle(hoodSetpointDeg);
+        SmartDashboard.putNumber("AutoAim/HoodSetpointDeg", hoodSetpointDeg);
+
         turret.setAngle(getTurretSetpointDegrees(robotPose, targetPose));
 
         SmartDashboard.putBoolean("AutoAim/InScoringZone", inScoringZone);

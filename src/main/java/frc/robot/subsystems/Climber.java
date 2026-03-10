@@ -22,8 +22,8 @@ public class Climber extends SubsystemBase
 {
     private static final int CONFIG_RETRIES = 5;
     
-    private static final double STATOR_CURRENT_LIMIT_AMPS = 10.0;   // TODO - Adjust as necessary to prevent damage to the motor and mechanism - set low rn for testing purposes
-    private static final double SUPPLY_CURRENT_LIMIT_AMPS = 10.0;   // TODO - Adjust as necessary to prevent damage to the motor and mechanism - set low rn for testing purposes
+    private static final double STATOR_CURRENT_LIMIT_AMPS = 120;   // TODO - Adjust as necessary to prevent damage to the motor and mechanism - set low rn for testing purposes
+    private static final double SUPPLY_CURRENT_LIMIT_AMPS = 60;   // TODO - Adjust as necessary to prevent damage to the motor and mechanism - set low rn for testing purposes
     private static final double MM_CRUISE_RPS = 5.0;
     private static final double MM_ACCEL_RPS2 = 5.0;
     private static final double SENSOR_TO_MECHANISM_RATIO = 78.33; // TOOD - Check this : Motor Gearbox = 20:1, 24T Gear -> 48T Gear = 2:1, 24T Pulley -> 47T Pulley = 47/24:1, Total Ratio = 20 * 2 * 47/24 = 78.33:1

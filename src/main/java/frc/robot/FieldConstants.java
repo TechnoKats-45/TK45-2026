@@ -72,7 +72,7 @@ public class FieldConstants {
     }
 
     public static final class Passing {
-        private static final double LATERAL_OFFSET_METERS = Units.feetToMeters(6);
+        private static final double LATERAL_OFFSET_METERS = Units.feetToMeters(10);
 
         public static final Pose3d BLUE_LEFT_TARGET = new Pose3d(
                 Hub.BLUE_CENTER.getX(),
